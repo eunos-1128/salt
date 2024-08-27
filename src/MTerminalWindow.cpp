@@ -224,7 +224,6 @@ void MSshTerminalWindow::OnProxyHTTP()
 void MSshTerminalWindow::AcceptsHostKey(const std::string &host, const std::string &algorithm, const pinch::blob &key,
 	pinch::host_key_state state, std::promise<pinch::host_key_reply> reply)
 {
-
 	PRINT_THREAD_ID;
 
 	std::string_view hsv(reinterpret_cast<const char *>(key.data()), key.size());
