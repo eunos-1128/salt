@@ -139,7 +139,7 @@ set(RESOURCES
 	${CMAKE_BINARY_DIR}/manual/salt.1)
 
 target_include_directories(salt PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-target_link_libraries(salt pinch::pinch libmcfp::libmcfp Threads::Threads mgui::mgui zeep::zeep)
+target_link_libraries(salt pinch::pinch mcfp::mcfp Threads::Threads mgui::mgui zeep::zeep)
 
 mrc_target_resources(salt ${RESOURCES})
 
