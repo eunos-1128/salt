@@ -42,7 +42,7 @@ endif()
 option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" OFF)
 option(BUILD_DOCUMENTATION "Build manual page" OFF)
 
-set(ZEEP_USE_BOOST_ASIO OFF)
+set(ZEEP_USE_BOOST_ASIO ${USE_BOOST_ASIO})
 
 include(GNUInstallDirs)
 include(CheckFunctionExists)

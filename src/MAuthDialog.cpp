@@ -103,9 +103,9 @@ MAuthDialog::MAuthDialog(const std::string &inTitle, const std::string &name, co
 MAuthDialog::~MAuthDialog()
 {
 	if (mPasswordReply.has_value())
-		mPasswordReply.value().set_exception(std::make_exception_ptr(std::system_error(pinch::error::auth_cancelled_by_user)));
+		mPasswordReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
 	if (mCredentialsReply.has_value())
-		mCredentialsReply.value().set_exception(std::make_exception_ptr(std::system_error(pinch::error::auth_cancelled_by_user)));
+		mCredentialsReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
 }
 
 bool MAuthDialog::OKClicked()
