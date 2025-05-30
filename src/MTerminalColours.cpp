@@ -296,3 +296,25 @@ const MColor k256AnsiColors[256] = {
 	{ uint8_t(228), uint8_t(228), uint8_t(228) }, // 254: #e4e4e4
 	{ uint8_t(238), uint8_t(238), uint8_t(238) }  // 255: #eeeeee
 };
+
+
+uint8_t LookupColor(MColor color)
+{
+	uint8_t result = 0;
+
+	int distance = 256 * 256 * 256;
+
+	for (uint8_t ix = 0; auto c : k256AnsiColors)
+	{
+		auto d = std::abs((int)color.red - c.red) + std::abs((int)color.green - c.green) + std::abs((int)color.blue - c.blue);
+		if (distance > d)
+		{
+			result = ix;
+			distance = d;
+		}
+
+		++ix;
+	}
+
+	return result;
+}

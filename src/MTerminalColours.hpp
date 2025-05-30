@@ -32,3 +32,5 @@
 #include "MColor.hpp"
 
 extern const MColor k256AnsiColors[256];
+
+uint8_t LookupColor(MColor color);

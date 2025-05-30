@@ -4160,6 +4160,23 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 					{
 						switch (mArgs[++i])
 						{
+							case 2:
+							{
+								MColor clr;
+								clr.red = mArgs[++i];
+								clr.green = mArgs[++i];
+								clr.blue = mArgs[++i];
+
+								uint8_t colorIndex = LookupColor(clr);
+
+								if (a == 38)
+									mCursor.style.SetForeColor((MXTermColor)colorIndex);
+								else
+									mCursor.style.SetBackColor((MXTermColor)colorIndex);
+
+								break;
+							}
+
 							case 5:
 							{
 								uint8_t colorIndex = static_cast<uint8_t>(mArgs[++i]);
