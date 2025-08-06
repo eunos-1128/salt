@@ -47,7 +47,6 @@
 using tcp = asio_ns::ip::tcp;
 namespace zh = zeep::http;
 namespace fs = std::filesystem;
-using json = zeep::json::element;
 
 // --------------------------------------------------------------------
 
@@ -84,7 +83,7 @@ class MHTTPProxyImpl
 
 // --------------------------------------------------------------------
 
-class proxy_controller : public zeep::http::html_controller
+class proxy_controller : public zeep::http::html_controller_v1
 {
   public:
 	proxy_controller(std::shared_ptr<pinch::basic_connection> ssh_connection, MHTTPProxyImpl &proxy)
@@ -92,7 +91,8 @@ class proxy_controller : public zeep::http::html_controller
 		, m_proxy(proxy)
 	{
 		mount_get("status", &proxy_controller::handle_status);
-		mount_get("css/", &proxy_controller::handle_file);
+		// mount_get("css/", &proxy_controller::handle_file);
+		map_get_file("css/");
 	}
 
 	~proxy_controller()
@@ -109,7 +109,7 @@ class proxy_controller : public zeep::http::html_controller
 	{
 		zh::scope sub(scope);
 
-		json stats{
+		zeep::el::object stats{
 			{ { "name", "Channels created" },
 				{ "value", m_channel_count } },
 			{ { "name", "Channels open" },
@@ -385,11 +385,13 @@ class MHTTPServer : public zeep::http::basic_server
 		return m_io_context;
 	}
 
-	void log_request(const std::string &client, const zh::request &req, const zh::reply &rep,
-		const std::chrono::system_clock::time_point &pt, const std::string &referer,
-		const std::string &userAgent, const std::string &entry) noexcept override
+	void log_request(std::string_view client,
+		const zeep::http::request &req, const zeep::http::reply &rep,
+		std::chrono::system_clock::time_point start,
+		std::string_view referer, std::string_view userAgent,
+		std::string_view entry) noexcept override
 	{
-		m_proxy.log_request(client, req, req.get_request_line(), rep);
+		m_proxy.log_request(std::string { client }, req, req.get_request_line(), rep);
 	}
 
   private:

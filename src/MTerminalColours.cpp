@@ -31,6 +31,8 @@
 
 #include "MTerminalColours.hpp"
 
+#include <cmath>
+
 const MColor k256AnsiColors[256] = {
 
 	{ uint8_t(0), uint8_t(0), uint8_t(0) },
@@ -302,11 +304,16 @@ uint8_t LookupColor(MColor color)
 {
 	uint8_t result = 0;
 
-	int distance = 256 * 256 * 256;
+	float cr = color.red, cg = color.green, cb = color.blue;
+	auto distance = std::numeric_limits<float>::max();
 
 	for (uint8_t ix = 0; auto c : k256AnsiColors)
 	{
-		auto d = std::abs((int)color.red - c.red) + std::abs((int)color.green - c.green) + std::abs((int)color.blue - c.blue);
+		auto d = 
+			(cr - c.red) * (cr - c.red) +
+			(cg - c.green) * (cg - c.green) +
+			(cb - c.blue) * (cb - c.blue);
+
 		if (distance > d)
 		{
 			result = ix;

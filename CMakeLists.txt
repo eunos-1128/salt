@@ -72,22 +72,24 @@ include(VersionString)
 write_version_header(${PROJECT_SOURCE_DIR}/src/)
 
 # Optionally use mrc to create resources
-find_package(Mrc QUIET)
+find_package(mrc QUIET)
 
 if(MRC_FOUND)
 	option(USE_RSRC "Use mrc to create resources" ON)
 else()
-	message(FATAL_ERROR "Cannot continue since mrc was not found")
+	message(FATAL_ERROR "salt: Cannot continue since mrc was not found")
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD)
 set(THREADS_PREFER_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
-add_subdirectory(libzeep EXCLUDE_FROM_ALL)
-add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
-add_subdirectory(libpinch EXCLUDE_FROM_ALL)
+find_package(mcfp REQUIRED)
+
 add_subdirectory(libmxml EXCLUDE_FROM_ALL)
+add_subdirectory(libzeep EXCLUDE_FROM_ALL)
+# add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+add_subdirectory(libpinch EXCLUDE_FROM_ALL)
 add_subdirectory(libmgui EXCLUDE_FROM_ALL)
 
 # Generate the manual first
