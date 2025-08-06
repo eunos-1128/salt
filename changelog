@@ -1,3 +1,6 @@
+Version 4.0.4
+- Added kex algo's ecdh-sha2-nistp256 and ecdh-sha2-nistp384
+
 Version 4.0.3
 - Added support for OSC 7, a more standard way or
   providing the current working directory to a
