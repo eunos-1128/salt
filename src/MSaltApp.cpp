@@ -6,22 +6,23 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 // Copyright Maarten L. Hekkelman 2011
@@ -57,8 +58,7 @@
 
 namespace fs = std::filesystem;
 
-const char
-	kAppName[] = "salt";
+const char kAppName[] = "salt";
 
 namespace
 {
@@ -75,8 +75,10 @@ std::regex kRecentRE("^" USER HOST PORT "(?:;" USER HOST PORT ";(.+)"
 MSaltApp::MSaltApp(MApplicationImpl *inImpl)
 	: MApplication(inImpl)
 
-	, cNew(this, "new-terminal", &MSaltApp::OnNew, 'n', kControlKey | kShiftKey)
-	, cConnect(this, "connect", &MSaltApp::OnConnect, 's', kControlKey | kShiftKey)
+	, cNew(this, "new-terminal", &MSaltApp::OnNew, 'n',
+		  kControlKey | kShiftKey)
+	, cConnect(this, "connect", &MSaltApp::OnConnect, 's',
+		  kControlKey | kShiftKey)
 	, cAddNewTOTP(this, "add-totp", &MSaltApp::OnAddNewTOTP)
 	, cQuit(this, "quit", &MSaltApp::OnQuit, 'q', kControlKey | kShiftKey)
 
@@ -141,15 +143,20 @@ void MSaltApp::Initialise()
 	}
 
 	// set preferred algorithms
-	pinch::key_exchange::set_algorithm(pinch::algorithm::encryption, pinch::direction::both,
+	pinch::key_exchange::set_algorithm(
+		pinch::algorithm::encryption, pinch::direction::both,
 		MPrefs::GetString("enc", pinch::kEncryptionAlgorithms));
-	pinch::key_exchange::set_algorithm(pinch::algorithm::verification, pinch::direction::both,
+	pinch::key_exchange::set_algorithm(
+		pinch::algorithm::verification, pinch::direction::both,
 		MPrefs::GetString("mac", pinch::kMacAlgorithms));
-	pinch::key_exchange::set_algorithm(pinch::algorithm::compression, pinch::direction::both,
+	pinch::key_exchange::set_algorithm(
+		pinch::algorithm::compression, pinch::direction::both,
 		MPrefs::GetString("cmp", pinch::kCompressionAlgorithms));
-	pinch::key_exchange::set_algorithm(pinch::algorithm::keyexchange, pinch::direction::both,
+	pinch::key_exchange::set_algorithm(
+		pinch::algorithm::keyexchange, pinch::direction::both,
 		MPrefs::GetString("kex", pinch::kKeyExchangeAlgorithms));
-	pinch::key_exchange::set_algorithm(pinch::algorithm::serverhostkey, pinch::direction::both,
+	pinch::key_exchange::set_algorithm(
+		pinch::algorithm::serverhostkey, pinch::direction::both,
 		MPrefs::GetString("shk", pinch::kServerHostKeyAlgorithms));
 
 	// clang-format off
@@ -185,7 +192,6 @@ void MSaltApp::OnPreferencesChanged()
 	for (auto &r : MConnectDialog::GetRecentHosts())
 		mRecent.emplace_back(r, mNextRecentNr++);
 	UpdateRecentSessionMenu();
-
 }
 
 void MSaltApp::SaveGlobals()
@@ -212,10 +218,7 @@ MApplication *MApplication::Create(MApplicationImpl *inImpl)
 
 // --------------------------------------------------------------------
 
-void MSaltApp::OnNew()
-{
-	DoNew();
-}
+void MSaltApp::OnNew() { DoNew(); }
 
 void MSaltApp::OnConnect()
 {
@@ -252,19 +255,23 @@ void MSaltApp::OnManual()
 		f << manual.rdbuf();
 		f.close();
 
-		MWindow *w = MTerminalWindow::Create({ "man", manpage.string() });
+		MWindow *w = MTerminalWindow::Create(std::filesystem::current_path(),
+			{ "man", manpage.string() });
 		w->Select();
 	}
 }
 
 void MSaltApp::OnAbout()
 {
-	DisplayAlert(nullptr, "about-alert", { kVersionNumber, kRevisionGitTag, std::to_string(kBuildNumber), kRevisionDate });
+	DisplayAlert(nullptr, "about-alert",
+		{ kVersionNumber, kRevisionGitTag, std::to_string(kBuildNumber),
+			kRevisionDate });
 }
 
 void MSaltApp::OnSelectTerminal(int inTerminalNr)
 {
-	for (auto w = MTerminalWindow::GetFirstTerminal(); w != nullptr; w = w->GetNextTerminal())
+	for (auto w = MTerminalWindow::GetFirstTerminal(); w != nullptr;
+		w = w->GetNextTerminal())
 	{
 		if (w->GetTerminalNr() != static_cast<uint32_t>(inTerminalNr))
 			continue;
@@ -300,7 +307,8 @@ void MSaltApp::UpdateWindowMenu()
 	assert(m);
 
 	std::vector<std::tuple<std::string, uint32_t>> labels;
-	for (auto w = MTerminalWindow::GetFirstTerminal(); w != nullptr; w = w->GetNextTerminal())
+	for (auto w = MTerminalWindow::GetFirstTerminal(); w != nullptr;
+		w = w->GetNextTerminal())
 		labels.emplace_back(w->GetTitle(), w->GetTerminalNr());
 
 	m->ReplaceItemsInSection(1, "app.select-terminal", labels);
@@ -314,7 +322,8 @@ void MSaltApp::UpdateRecentSessionMenu()
 	std::vector<std::tuple<std::string, uint32_t>> items;
 	for (const auto &[ci, nr] : mRecent)
 		items.emplace_back(ci.str(), nr);
-	MMenuBar::Instance().FindMenuByID("recent")->ReplaceItemsInSection(1, "app.open-recent", items);
+	MMenuBar::Instance().FindMenuByID("recent")->ReplaceItemsInSection(
+		1, "app.open-recent", items);
 }
 
 void MSaltApp::UpdatePublicKeyMenu()
@@ -323,7 +332,9 @@ void MSaltApp::UpdatePublicKeyMenu()
 	pinch::ssh_agent &agent(pinch::ssh_agent::instance());
 	for (uint32_t i = 0; auto &key : agent)
 		items.emplace_back(key.get_comment(), i++);
-	MMenuBar::Instance().FindMenuByID("public-keys")->ReplaceItemsInSection(0, "win.install-public-key", items);
+	MMenuBar::Instance()
+		.FindMenuByID("public-keys")
+		->ReplaceItemsInSection(0, "win.install-public-key", items);
 }
 
 void MSaltApp::UpdateTOTPMenu()
@@ -337,17 +348,21 @@ void MSaltApp::UpdateTOTPMenu()
 		if (regex_match(p, m, rx))
 			items.emplace_back(m[1].str(), i++);
 	}
-	MMenuBar::Instance().FindMenuByID("totp")->ReplaceItemsInSection(1, "win.enter-totp", items);
+	MMenuBar::Instance().FindMenuByID("totp")->ReplaceItemsInSection(
+		1, "win.enter-totp", items);
 }
 
 void MSaltApp::Open(const ConnectInfo &inRecent, const std::string &inCommand)
 {
 	auto connection =
-		inRecent.proxy.has_value() ? mConnectionPool.get(inRecent.user, inRecent.host, inRecent.port,
-										 inRecent.proxy->user, inRecent.proxy->host, inRecent.proxy->port, inRecent.proxy->command)
-								   : mConnectionPool.get(inRecent.user, inRecent.host, inRecent.port);
+		inRecent.proxy.has_value()
+			? mConnectionPool.get(inRecent.user, inRecent.host, inRecent.port,
+				  inRecent.proxy->user, inRecent.proxy->host,
+				  inRecent.proxy->port, inRecent.proxy->command)
+			: mConnectionPool.get(inRecent.user, inRecent.host, inRecent.port);
 
-	auto w = MTerminalWindow::Create(inRecent.user, inRecent.host, inRecent.port, inCommand, connection);
+	auto w = MTerminalWindow::Create(inRecent.user, inRecent.host, inRecent.port,
+		inCommand, connection);
 	w->Select();
 
 	mRecent.emplace_front(inRecent, mNextRecentNr++);
@@ -360,7 +375,8 @@ void MSaltApp::Open(const ConnectInfo &inRecent, const std::string &inCommand)
 		break;
 	}
 
-	while (static_cast<int>(mRecent.size()) > MPrefs::GetInteger("recent-count", 10))
+	while (static_cast<int>(mRecent.size()) >
+		   MPrefs::GetInteger("recent-count", 10))
 		mRecent.pop_back();
 
 	UpdateRecentSessionMenu();
@@ -369,11 +385,16 @@ void MSaltApp::Open(const ConnectInfo &inRecent, const std::string &inCommand)
 
 bool MSaltApp::AllowQuit(bool inLogOff)
 {
-	if (mConnectionPool.has_open_channels() == false and MTerminalWindow::IsAnyTerminalOpen() == false)
+	if (mConnectionPool.has_open_channels() == false and
+		MTerminalWindow::IsAnyTerminalOpen() == false)
 		return true;
 
-	DisplayAlert(nullptr, "close-all-sessions-alert", [this](int result)
-		{ if (result == 1) DoQuit(); },
+	DisplayAlert(nullptr, "close-all-sessions-alert",
+		[this](int result)
+		{
+			if (result == 1)
+				DoQuit();
+		},
 		{});
 
 	return false;
@@ -389,11 +410,16 @@ void MSaltApp::DoQuit()
 	MApplication::DoQuit();
 }
 
-int MSaltApp::HandleCommandLine(int argc, const char *const argv[])
+int MSaltApp::HandleCommandLine(int argc, const char *const argv[],
+	std::filesystem::path cwd)
 {
+	for (int i = 0; i < argc; ++i)
+		std::cout << (argv[i] ? argv[i] : "null") << '\n';
+
 	auto &config = mcfp::config::instance();
 
-	config.init("usage: salt [options] [-- program [args...]]",
+	config.init(
+		"usage: salt [options] [-- program [args...]]",
 		mcfp::make_option<std::string>("connect,c", "Connect to remote host"),
 		mcfp::make_option("select-host", "Show connection dialog"));
 
@@ -406,28 +432,31 @@ int MSaltApp::HandleCommandLine(int argc, const char *const argv[])
 	}
 
 	if (config.has("connect"))
-		Execute("Open", { config.get("connect") });
+		Execute("Open", cwd, { config.get("connect") });
 	else if (config.has("select-host"))
-		Execute("Connect", {});
+		Execute("Connect", cwd, {});
 	else if (config.operands().empty())
-		Execute("New", {});
+		Execute("New", cwd, {});
 	else
-		Execute("Execute", config.operands());
+		Execute("Execute", cwd, config.operands());
 
 	return 0;
 }
 
 void MSaltApp::DoNew()
 {
-	MWindow *w = MTerminalWindow::Create({});
+	MWindow *w = MTerminalWindow::Create(std::filesystem::current_path(), {});
 	w->Select();
 }
 
 void MSaltApp::Execute(const std::string &inCommand,
-	const std::vector<std::string> &inArguments)
+	const std::filesystem::path &inCwd, const std::vector<std::string> &inArguments)
 {
 	if (inCommand == "New")
-		OnNew();
+	{
+		MWindow *w = MTerminalWindow::Create(inCwd, {});
+		w->Select();
+	}
 	else if (inCommand == "Connect")
 		OnConnect();
 	else if (inCommand == "Open")
@@ -439,7 +468,8 @@ void MSaltApp::Execute(const std::string &inCommand,
 		if (zeep::http::is_valid_uri(url))
 		{
 			zeep::http::uri uri(url);
-			if (auto scheme = uri.get_scheme(); not(scheme.empty() or IEquals(scheme, "ssh")))
+			if (auto scheme = uri.get_scheme();
+				not(scheme.empty() or IEquals(scheme, "ssh")))
 				return;
 
 			ci.host = uri.get_host();
@@ -455,13 +485,15 @@ void MSaltApp::Execute(const std::string &inCommand,
 		if (ci.port == 0)
 			ci.port = 22;
 
-		std::shared_ptr<pinch::basic_connection> connection = mConnectionPool.get(ci.user, ci.host, ci.port);
-		MWindow *w = MTerminalWindow::Create(ci.user, ci.host, ci.port, "", connection);
+		std::shared_ptr<pinch::basic_connection> connection =
+			mConnectionPool.get(ci.user, ci.host, ci.port);
+		MWindow *w =
+			MTerminalWindow::Create(ci.user, ci.host, ci.port, "", connection);
 		w->Select();
 	}
 	else if (inCommand == "Execute")
 	{
-		MWindow *w = MTerminalWindow::Create(inArguments);
+		MWindow *w = MTerminalWindow::Create(inCwd, inArguments);
 		w->Select();
 	}
 }
@@ -487,7 +519,8 @@ bool askYesNo(const std::string &msg, bool defaultYes)
 	std::cout.flush();
 	std::getline(std::cin, yesno);
 
-	return yesno.empty() ? defaultYes : IEquals(yesno, "y") or IEquals(yesno, "yes");
+	return yesno.empty() ? defaultYes
+	                     : IEquals(yesno, "y") or IEquals(yesno, "yes");
 }
 
 std::string ask(const std::string &msg, std::string defaultAnswer = {})
@@ -503,7 +536,8 @@ std::string ask(const std::string &msg, std::string defaultAnswer = {})
 void Install(const std::string &inPrefix)
 {
 	std::error_code ec;
-	if (auto exefile = fs::read_symlink("/proc/self/exe", ec); not ec and fs::exists(exefile, ec))
+	if (auto exefile = fs::read_symlink("/proc/self/exe", ec);
+		not ec and fs::exists(exefile, ec))
 		gExecutablePath = exefile;
 
 	fs::path prefix(inPrefix);
@@ -552,7 +586,8 @@ void Install(const std::string &inPrefix)
 
 			if (ec)
 			{
-				std::cout << "Error creating directory " << p << ": " << ec.message() << "\n";
+				std::cout << "Error creating directory " << p << ": " << ec.message()
+						  << "\n";
 				exit(1);
 			}
 		}
@@ -560,7 +595,8 @@ void Install(const std::string &inPrefix)
 
 	// copy executable
 
-	std::cout << "copying " << gExecutablePath.string() << " to " << bindir << '\n';
+	std::cout << "copying " << gExecutablePath.string() << " to " << bindir
+			  << '\n';
 
 	if (fs::exists(bindir / "salt", ec))
 		fs::remove(bindir / "salt", ec);
@@ -656,14 +692,17 @@ void Install(const std::string &inPrefix)
 int main(int argc, char *const argv[])
 {
 #if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
-	int err_fd = open(("/tmp/salt-debug-" + std::to_string(getpid()) + ".log").c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0600);
+	int err_fd =
+		open(("/tmp/salt-debug-" + std::to_string(getpid()) + ".log").c_str(),
+			O_CREAT | O_TRUNC | O_WRONLY, 0600);
 	if (err_fd > 0)
 		dup2(err_fd, STDERR_FILENO);
 #endif
 
 	auto &config = mcfp::config::instance();
 
-	config.init("usage: salt [options] [-- program [args...]]",
+	config.init(
+		"usage: salt [options] [-- program [args...]]",
 		mcfp::make_option("help,h", "Display this message"),
 		mcfp::make_option("version", "Show version number"),
 		mcfp::make_option("verbose", "More verbose"),

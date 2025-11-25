@@ -47,11 +47,11 @@ class MSaltApp : public MApplication
 
 	~MSaltApp();
 
-	int HandleCommandLine(int argc, const char * const argv[]) override;
+	int HandleCommandLine(int argc, const char * const argv[], std::filesystem::path cwd) override;
 
 	void DoNew();
 
-	void Execute(const std::string &inCommand,
+	void Execute(const std::string &inCommand, const std::filesystem::path &inCwd,
 		const std::vector<std::string> &inArguments) override;
 
 	void Open(const ConnectInfo &inRecent, const std::string &inCommand = {});

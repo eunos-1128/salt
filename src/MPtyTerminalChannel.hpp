@@ -39,6 +39,7 @@
 class MPtyTerminalChannel : public MTerminalChannel
 {
   public:
+	MPtyTerminalChannel(const std::filesystem::path &inCwd);
 	MPtyTerminalChannel(MTerminalChannel *inCloneFrom);
 	~MPtyTerminalChannel();
 

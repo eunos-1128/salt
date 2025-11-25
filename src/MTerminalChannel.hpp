@@ -73,6 +73,7 @@ class MTerminalChannel
 	virtual void ReadData(const ReadCallback &inCallback) = 0;
 
 	static MTerminalChannel *Create(std::shared_ptr<pinch::basic_connection> inConnection);
+	static MTerminalChannel *Create(const std::filesystem::path &inCwd);
 	static MTerminalChannel *Create(MTerminalChannel *inCloneFrom);
 
 	const std::vector<std::string> &GetConnectionInfo() const

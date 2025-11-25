@@ -56,6 +56,13 @@
 
 // --------------------------------------------------------------------
 
+MPtyTerminalChannel::MPtyTerminalChannel(const std::filesystem::path &inCwd)
+	: mPid(-1)
+	, mPty(MSaltApp::Instance().get_io_context())
+{
+	SetCWD(inCwd);
+}
+
 MPtyTerminalChannel::MPtyTerminalChannel(MTerminalChannel *inCloneFrom)
 	: mPid(-1)
 	, mPty(MSaltApp::Instance().get_io_context())
@@ -320,6 +327,11 @@ void MPtyTerminalChannel::ReadData(const ReadCallback &inCallback)
 
 // --------------------------------------------------------------------
 // MTerminalChannel factory
+
+MTerminalChannel *MTerminalChannel::Create(const std::filesystem::path &inCwd)
+{
+	return new MPtyTerminalChannel(inCwd);
+}
 
 MTerminalChannel *MTerminalChannel::Create(MTerminalChannel *inCloneFrom)
 {

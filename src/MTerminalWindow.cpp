@@ -300,7 +300,7 @@ void MSshTerminalWindow::ProvideCredentials(const std::string &name, const std::
 class MPtyTerminalWindow : public MTerminalWindow
 {
   public:
-	MPtyTerminalWindow(const std::vector<std::string> &inArgv);
+	MPtyTerminalWindow(const std::filesystem::path &inCwd, const std::vector<std::string> &inArgv);
 	MPtyTerminalWindow(MPtyTerminalWindow *inOriginal = nullptr);
 
 	MTerminalWindow *Clone(MTerminalWindow *inOriginal)
@@ -310,8 +310,8 @@ class MPtyTerminalWindow : public MTerminalWindow
 	}
 };
 
-MPtyTerminalWindow::MPtyTerminalWindow(const std::vector<std::string> &inArgv)
-	: MTerminalWindow(MTerminalChannel::Create(nullptr), inArgv)
+MPtyTerminalWindow::MPtyTerminalWindow(const std::filesystem::path &inCwd, const std::vector<std::string> &inArgv)
+	: MTerminalWindow(MTerminalChannel::Create(inCwd), inArgv)
 {
 	SetTitle("Salt - terminal");
 }
@@ -567,9 +567,9 @@ void MTerminalWindow::Close()
 // ------------------------------------------------------------------
 //
 
-MTerminalWindow *MTerminalWindow::Create(const std::vector<std::string> &inArgv)
+MTerminalWindow *MTerminalWindow::Create(const std::filesystem::path &inCwd, const std::vector<std::string> &inArgv)
 {
-	return new MPtyTerminalWindow(inArgv);
+	return new MPtyTerminalWindow(inCwd, inArgv);
 }
 
 MTerminalWindow *MTerminalWindow::Create(const std::string &inUser, const std::string &inHost, uint16_t inPort,
