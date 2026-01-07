@@ -1,17 +1,17 @@
 [submodule "pinch"]
 	path = libpinch
-	url = git@github.com:mhekkel/pinch.git
+	url = https://github.com/mhekkel/pinch.git
 [submodule "libmcfp"]
 	path = libmcfp
-	url = git@github.com:mhekkel/libmcfp.git
+	url = https://github.com/mhekkel/libmcfp.git
 [submodule "libpinch/"]
-	url = git@github.com:mhekkel/libpinch.git
+	url = https://github.com/mhekkel/libpinch.git
 [submodule "libmgui"]
 	path = libmgui
-	url = git@github.com:mhekkel/libmgui.git
+	url = https://github.com/mhekkel/libmgui.git
 [submodule "libzeep"]
 	path = libzeep
-	url = git@github.com:mhekkel/libzeep.git
+	url = https://github.com/mhekkel/libzeep.git
 [submodule "mxml"]
 	path = libmxml
-	url = git@github.com:mhekkel/mxml.git
+	url = https://github.com/mhekkel/mxml.git
