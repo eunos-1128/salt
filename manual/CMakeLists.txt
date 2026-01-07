@@ -11,7 +11,8 @@ configure_file(conf.py.in ${CMAKE_CURRENT_SOURCE_DIR}/conf.py @ONLY)
 # 	BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}
 # 	COMMENT "Generating documentation with Sphinx")
 
-add_custom_target(NAME salt.1
+add_custom_target(salt.1 ALL
+	BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/salt.1
 	COMMAND ${SPHINX_EXECUTABLE} -b man ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/salt.rst
 	DEPENDS salt.rst
 	COMMENT "Generating manual pages with Sphinx")
