@@ -193,8 +193,11 @@ std::vector<ConnectInfo> MConnectDialog::GetRecentHosts()
 	return result;
 }
 
-void MConnectDialog::SelectedPrivateKey(const std::filesystem::path &inPemFile)
+void MConnectDialog::SelectedPrivateKey(bool ok, const std::filesystem::path &inPemFile)
 {
+	if (not ok)
+		return;
+
 	std::ifstream file(inPemFile);
 	if (not file.is_open())
 		throw std::runtime_error("Could not open private key file");
@@ -226,7 +229,7 @@ void MConnectDialog::ButtonClicked(const std::string &inID)
 	//		SetVisible("more-box", IsOpen("more-expander"));
 	//	else
 	if (inID == "priv-key")
-		MFileDialogs::ChooseOneFile(this, std::bind(&MConnectDialog::SelectedPrivateKey, this, std::placeholders::_1));
+		MFileDialogs::ChooseOneFile(this, std::bind(&MConnectDialog::SelectedPrivateKey, this, std::placeholders::_1, std::placeholders::_2));
 	else
 		MDialog::ButtonClicked(inID);
 }

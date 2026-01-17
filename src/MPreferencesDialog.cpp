@@ -363,9 +363,10 @@ void MPreferencesDialog::ButtonClicked(const string &inID)
 	}
 	else if (inID == "browse-download-dir")
 	{
-		MFileDialogs::ChooseDirectory(this, [this](std::filesystem::path dir)
+		MFileDialogs::ChooseDirectory(this, [this](bool ok, std::filesystem::path dir)
 		{
-			SetText("download-dir", dir.string());
+			if (ok)
+				SetText("download-dir", dir.string());
 		});
 	}
 	else

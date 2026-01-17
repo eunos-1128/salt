@@ -2690,7 +2690,7 @@ void MTerminalView::Scroll(MScrollMessage inMessage)
 	}
 
 	Invalidate();
-	GetWindow()->UpdateNow();
+	// GetWindow()->UpdateNow();
 }
 
 void MTerminalView::GetTerminalMetrics(uint32_t inColumns, uint32_t inRows, bool inStatusLine,
@@ -5828,7 +5828,7 @@ void MTerminalView::DownloadFile(const std::filesystem::path &path)
 {
 	if (mTerminalChannel->CanDownloadFiles())
 	{
-		auto lambda = [path, channel = mTerminalChannel](std::filesystem::path inLocalFile, bool inReplace = true)
+		auto lambda = [path, channel = mTerminalChannel](bool, std::filesystem::path inLocalFile, bool inReplace = true)
 		{
 			if (not inReplace)
 			{
@@ -5842,9 +5842,9 @@ void MTerminalView::DownloadFile(const std::filesystem::path &path)
 		};
 
 		if (MPrefs::GetBoolean("always-ask-download-dir", false))
-			MFileDialogs::SaveFileAs(GetWindow(), path, std::move(lambda));
+			MFileDialogs::SaveFileAs(GetWindow(), path, lambda);
 		else
-			lambda(GetDownloadDirectory() / path.filename(), false);
+			lambda(true, GetDownloadDirectory() / path.filename(), false);
 	}
 }
 
@@ -5852,7 +5852,7 @@ void MTerminalView::UploadFile(const std::filesystem::path &path)
 {
 	if (mTerminalChannel->CanDownloadFiles())
 	{
-		MFileDialogs::ChooseOneFile(GetWindow(), [path, channel = mTerminalChannel](std::filesystem::path file)
+		MFileDialogs::ChooseOneFile(GetWindow(), [path, channel = mTerminalChannel](bool, std::filesystem::path file)
 			{ channel->UploadFile(path, file); });
 	}
 }

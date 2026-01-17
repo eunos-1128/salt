@@ -28,6 +28,10 @@
 // Copyright Maarten L. Hekkelman 2011
 // All rights reserved
 
+import mcfp;
+
+
+
 #include "MSaltApp.hpp"
 #include "MAddTOTPHashDialog.hpp"
 #include "MAlerts.hpp"
@@ -44,12 +48,14 @@
 
 #include <pinch.hpp>
 
-#include <mcfp/mcfp.hpp>
+// #include <mcfp/mcfp.hpp>
+
 #include <zeep/http/uri.hpp>
 
 #include <filesystem>
 #include <fstream>
 #include <regex>
+#include <vector>
 
 #if defined(_MSC_VER)
 # pragma comment(lib, "libpinch")
@@ -69,6 +75,8 @@ namespace
 std::regex kRecentRE("^" USER HOST PORT "(?:;" USER HOST PORT ";(.+)"
 					 ")?(?: >> (.+))?$");
 } // namespace
+
+
 
 // --------------------------------------------------------------------
 
@@ -306,7 +314,7 @@ void MSaltApp::UpdateWindowMenu()
 	auto m = MMenuBar::Instance().FindMenuByID("window");
 	assert(m);
 
-	std::vector<std::tuple<std::string, uint32_t>> labels;
+	std::vector<std::tuple<std::string, int>> labels;
 	for (auto w = MTerminalWindow::GetFirstTerminal(); w != nullptr;
 		w = w->GetNextTerminal())
 		labels.emplace_back(w->GetTitle(), w->GetTerminalNr());
@@ -319,7 +327,7 @@ void MSaltApp::UpdateWindowMenu()
 
 void MSaltApp::UpdateRecentSessionMenu()
 {
-	std::vector<std::tuple<std::string, uint32_t>> items;
+	std::vector<std::tuple<std::string, int>> items;
 	for (const auto &[ci, nr] : mRecent)
 		items.emplace_back(ci.str(), nr);
 	MMenuBar::Instance().FindMenuByID("recent")->ReplaceItemsInSection(
@@ -328,7 +336,7 @@ void MSaltApp::UpdateRecentSessionMenu()
 
 void MSaltApp::UpdatePublicKeyMenu()
 {
-	std::vector<std::tuple<std::string, uint32_t>> items;
+	std::vector<std::tuple<std::string, int>> items;
 	pinch::ssh_agent &agent(pinch::ssh_agent::instance());
 	for (uint32_t i = 0; auto &key : agent)
 		items.emplace_back(key.get_comment(), i++);
@@ -339,7 +347,7 @@ void MSaltApp::UpdatePublicKeyMenu()
 
 void MSaltApp::UpdateTOTPMenu()
 {
-	std::vector<std::tuple<std::string, uint32_t>> items;
+	std::vector<std::tuple<std::string, int>> items;
 	const std::regex rx("(.+);[A-Z2-7]+");
 
 	for (uint32_t i = 0; auto &p : MPrefs::GetArray("totp"))

@@ -103,7 +103,7 @@ class MConnectDialog : public MDialog
 	void SelectProxy(const ProxyInfo &inProxy);
 	void SelectRecent(const ConnectInfo &inRecent);
 
-	void SelectedPrivateKey(const std::filesystem::path &inPemFile);
+	void SelectedPrivateKey(bool ok, const std::filesystem::path &inPemFile);
 
 	std::vector<ConnectInfo> mRecentSessions;
 	std::vector<ProxyInfo> mRecentProxies;
