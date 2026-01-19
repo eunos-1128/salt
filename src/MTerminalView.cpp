@@ -2992,14 +2992,13 @@ void MTerminalView::WriteChar(unicode inChar)
 
 	int32_t mr = mCursor.DECOM ? mMarginRight : mTerminalWidth - 1;
 	int32_t ml = mCursor.DECOM ? mMarginLeft : 0;
-	int32_t mb = mCursor.DECOM ? mMarginBottom : mTerminalHeight - 1;
 
 	if (mCursor.x >= mr + 1)
 	{
 		if (mCursor.DECAWM)
 		{
 			buffer->WrapLine(mCursor.y);
-			if (mCursor.y < mb)
+			if (mCursor.y < mMarginBottom)
 				++mCursor.y;
 			else
 				ScrollForward();
