@@ -83,47 +83,25 @@ endif()
 
 add_compile_options(-pthread)
 
-# add_subdirectory(libmxml EXCLUDE_FROM_ALL)
-add_subdirectory(libzeep EXCLUDE_FROM_ALL)
-add_subdirectory(libmcfp EXCLUDE_FROM_ALL)
+find_package(mcfp REQUIRED)
+find_package(zeem REQUIRED)
+find_package(zeep REQUIRED)
+
 add_subdirectory(libpinch EXCLUDE_FROM_ALL)
 add_subdirectory(libmgui EXCLUDE_FROM_ALL)
 
 # Generate the manual first
 add_subdirectory(manual)
 
+file(GLOB salt_src ${CMAKE_SOURCE_DIR}/src/*.cpp)
+# file(GLOB mgui_src ${CMAKE_SOURCE_DIR}/libmgui/src/*.cpp)
+# file(GLOB mgui_gtk_src ${CMAKE_SOURCE_DIR}/libmgui/src/Gtk/*.cpp)
+
+list(FILTER mgui_src EXCLUDE REGEX ${CMAKE_SOURCE_DIR}/libmgui/src/MSound.cpp)
+
 add_executable(salt
-    ${CMAKE_SOURCE_DIR}/src/MAddTOTPHashDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/MAddTOTPHashDialog.hpp
-    ${CMAKE_SOURCE_DIR}/src/MAuthDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/MAuthDialog.hpp
-    ${CMAKE_SOURCE_DIR}/src/MCSICommands.hpp
-    ${CMAKE_SOURCE_DIR}/src/MConnectDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/MConnectDialog.hpp
-    ${CMAKE_SOURCE_DIR}/src/MHTTPProxy.hpp
-    ${CMAKE_SOURCE_DIR}/src/MPortForwardingDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/MPortForwardingDialog.hpp
-    ${CMAKE_SOURCE_DIR}/src/MPreferencesDialog.hpp
-    ${CMAKE_SOURCE_DIR}/src/MSalt.hpp
-    ${CMAKE_SOURCE_DIR}/src/MSearchPanel.hpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalBuffer.hpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalChannel.hpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalColours.cpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalColours.hpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalView.hpp
-    ${CMAKE_SOURCE_DIR}/src/MVT220CharSets.hpp
-    ${CMAKE_SOURCE_DIR}/src/MPtyTerminalChannel.hpp
-    ${CMAKE_SOURCE_DIR}/src/MSearchPanel.cpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalBuffer.cpp
-    ${CMAKE_SOURCE_DIR}/src/MSaltApp.hpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalWindow.hpp
-    ${CMAKE_SOURCE_DIR}/src/MHTTPProxy.cpp
-    ${CMAKE_SOURCE_DIR}/src/MPtyTerminalChannel.cpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalChannel.cpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalView.cpp
-    ${CMAKE_SOURCE_DIR}/src/MTerminalWindow.cpp
-    ${CMAKE_SOURCE_DIR}/src/MPreferencesDialog.cpp
-    ${CMAKE_SOURCE_DIR}/src/MSaltApp.cpp)
+    ${salt_src}
+    ${mgui_src})
 
 set(RESOURCES
     ${CMAKE_SOURCE_DIR}/rsrc/Menus
@@ -138,10 +116,16 @@ set(RESOURCES
     ${CMAKE_BINARY_DIR}/manual/salt.1)
 
 target_compile_features(salt PUBLIC cxx_std_20)
-target_include_directories(salt PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-target_link_libraries(salt pinch::pinch mcfp::mcfp
-    # Threads::Threads
-    mgui::mgui zeep::zeep)
+target_include_directories(salt
+    PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/libmgui/include)
+target_compile_definitions(salt PUBLIC USE_RSRC)
+target_link_libraries(salt pinch::pinch mcfp::mcfp zeem::zeem zeep::zeep mgui::mgui)
+
+pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4 libcanberra gtk4-x11)
+target_link_libraries(salt PkgConfig::GTK4 X11)
 
 mrc_target_resources(salt ${RESOURCES})
 

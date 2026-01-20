@@ -51,10 +51,9 @@
 
 #include "MTerminalColours.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/http/uri.hpp>
-
 #include <pinch/debug.hpp>
+#include <zeep/uri.hpp>
+#include <zeep/crypto.hpp>
 
 #include <chrono>
 #include <cmath>
@@ -5291,7 +5290,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 			{
 				try
 				{
-					zeep::http::uri uri(mArgString);
+					zeep::uri uri(mArgString);
 					if (uri.get_scheme() == "file")
 					{
 						mTerminalHost = uri.get_host();
@@ -5878,7 +5877,7 @@ void MTerminalView::SetHyperLink(const std::string &inURI)
 		else
 			uri = inURI;
 
-		if (zeep::http::is_valid_uri(uri))
+		if (zeep::is_valid_uri(uri))
 			mHyperLink = mBuffer->AddHyperLink(uri, id);
 	}
 }
@@ -5887,7 +5886,7 @@ void MTerminalView::LinkClicked(std::string inLink)
 {
 	try
 	{
-		zeep::http::uri uri(inLink);
+		zeep::uri uri(inLink);
 
 		if (uri.get_scheme() == "file" and mTerminalChannel->CanDownloadFiles() and uri.get_host() == mTerminalHost)
 		{

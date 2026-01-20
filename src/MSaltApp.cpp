@@ -28,10 +28,6 @@
 // Copyright Maarten L. Hekkelman 2011
 // All rights reserved
 
-import mcfp;
-
-
-
 #include "MSaltApp.hpp"
 #include "MAddTOTPHashDialog.hpp"
 #include "MAlerts.hpp"
@@ -46,11 +42,9 @@ import mcfp;
 #include "mrsrc.hpp"
 #include "revision.hpp"
 
+#include <mcfp/mcfp.hpp>
 #include <pinch.hpp>
-
-// #include <mcfp/mcfp.hpp>
-
-#include <zeep/http/uri.hpp>
+#include <zeep/uri.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -473,9 +467,9 @@ void MSaltApp::Execute(const std::string &inCommand,
 
 		auto url = inArguments.front();
 
-		if (zeep::http::is_valid_uri(url))
+		if (zeep::is_valid_uri(url))
 		{
-			zeep::http::uri uri(url);
+			zeep::uri uri(url);
 			if (auto scheme = uri.get_scheme();
 				not(scheme.empty() or IEquals(scheme, "ssh")))
 				return;

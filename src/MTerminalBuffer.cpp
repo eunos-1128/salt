@@ -37,8 +37,7 @@
 #include <regex>
 #include <set>
 
-#include <zeep/http/uri.hpp>
-#include <zeep/unicode-support.hpp>
+#include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
 
@@ -1144,7 +1143,7 @@ std::string MTerminalBuffer::GetURIAtPosition(int32_t inLine, int32_t inColumn,
 			{
 				uri = scheme + ':' + uri;
 
-				if (not zeep::http::is_valid_uri(uri))
+				if (not zeep::is_valid_uri(uri))
 					uri.clear();
 				else
 				{
@@ -1173,7 +1172,7 @@ std::string MTerminalBuffer::GetURIAtPosition(int32_t inLine, int32_t inColumn,
 			{
 				uri = scheme + ':' + uri;
 
-				if (not zeep::http::is_valid_uri(uri))
+				if (not zeep::is_valid_uri(uri))
 					uri.clear();
 				else
 				{
@@ -1197,7 +1196,7 @@ std::string MTerminalBuffer::GetURIAtPosition(int32_t inLine, int32_t inColumn,
 			{
 				uri += GetText(l1, c1, l2, c2, false);
 
-				if (not zeep::http::is_valid_uri(uri))
+				if (not zeep::is_valid_uri(uri))
 					uri.clear();
 				else
 				{

@@ -29,18 +29,18 @@
 #include "MPreferences.hpp"
 #include "MSaltApp.hpp"
 
-#include <zeep/crypto.hpp>
-#include <zeep/http/error-handler.hpp>
-#include <zeep/http/html-controller.hpp>
-// #include <zeep/http/login-controller.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/server.hpp>
-#include <zeep/http/uri.hpp>
-
 #include <pinch.hpp>
 
 #include <fstream>
+
+#include <zeep/http/server.hpp>
+#include <zeep/http/security.hpp>
+#include <zeep/http/html-controller.hpp>
+#include <zeep/http/request.hpp>
+#include <zeep/http/reply.hpp>
+#include <zeep/http/message-parser.hpp>
+#include <zeep/uri.hpp>
+#include <zeep/http/error-handler.hpp>
 
 // --------------------------------------------------------------------
 
@@ -128,7 +128,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 
 		++m_request_count;
 
-		if (zh::uri(req.get_uri()).get_host() == "proxy.hekkelman.net")
+		if (zeep::uri(req.get_uri()).get_host() == "proxy.hekkelman.net")
 			result = zh::html_controller::handle_request(req, reply);
 		else if (req.get_method() == "CONNECT")
 			asio_ns::co_spawn(
