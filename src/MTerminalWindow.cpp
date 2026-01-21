@@ -33,7 +33,6 @@
 #include "MAuthDialog.hpp"
 #include "MClipboard.hpp"
 #include "MControls.hpp"
-#include "MError.hpp"
 #include "MMenu.hpp"
 #include "MPortForwardingDialog.hpp"
 #include "MPreferences.hpp"

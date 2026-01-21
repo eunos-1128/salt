@@ -29,7 +29,6 @@
 
 #include "MTerminalChannel.hpp"
 #include "MAlerts.hpp"
-#include "MError.hpp"
 #include "MSaltApp.hpp"
 #include "MStrings.hpp"
 #include "MUtils.hpp"

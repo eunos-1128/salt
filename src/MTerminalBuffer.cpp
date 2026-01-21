@@ -28,7 +28,6 @@
 // All rights reserved
 
 #include "MTerminalBuffer.hpp"
-#include "MError.hpp"
 #include "MPreferences.hpp"
 #include "MUnicode.hpp"
 

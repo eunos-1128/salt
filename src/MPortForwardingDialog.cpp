@@ -26,7 +26,6 @@
 
 #include "MPortForwardingDialog.hpp"
 #include "MAlerts.hpp"
-#include "MError.hpp"
 #include "MHTTPProxy.hpp"
 #include "MPreferences.hpp"
 

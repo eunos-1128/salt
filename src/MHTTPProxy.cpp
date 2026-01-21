@@ -25,7 +25,6 @@
  */
 
 #include "MHTTPProxy.hpp"
-#include "MError.hpp"
 #include "MPreferences.hpp"
 #include "MSaltApp.hpp"
 

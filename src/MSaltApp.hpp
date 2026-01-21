@@ -47,7 +47,7 @@ class MSaltApp : public MApplication
 
 	~MSaltApp();
 
-	int HandleCommandLine(int argc, const char * const argv[], std::filesystem::path cwd) override;
+	int HandleCommandLine(int argc, const char * const argv[], const std::filesystem::path &cwd) override;
 
 	void DoNew();
 

@@ -32,7 +32,6 @@
 #include "MAddTOTPHashDialog.hpp"
 #include "MAlerts.hpp"
 #include "MConnectDialog.hpp"
-#include "MError.hpp"
 #include "MMenu.hpp"
 #include "MPreferences.hpp"
 #include "MPreferencesDialog.hpp"
@@ -413,7 +412,7 @@ void MSaltApp::DoQuit()
 }
 
 int MSaltApp::HandleCommandLine(int argc, const char *const argv[],
-	std::filesystem::path cwd)
+	const std::filesystem::path &cwd)
 {
 	for (int i = 0; i < argc; ++i)
 		std::cout << (argv[i] ? argv[i] : "null") << '\n';

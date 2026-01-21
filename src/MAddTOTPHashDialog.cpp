@@ -29,7 +29,6 @@
 
 #include "MAddTOTPHashDialog.hpp"
 #include "MAlerts.hpp"
-#include "MError.hpp"
 #include "MPreferences.hpp"
 #include "MSaltApp.hpp"
 #include "MUtils.hpp"

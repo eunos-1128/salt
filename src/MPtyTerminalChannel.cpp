@@ -28,7 +28,6 @@
 // All rights reserved
 
 #include "MPtyTerminalChannel.hpp"
-#include "MError.hpp"
 #include "MSaltApp.hpp"
 #include "MTerminalChannel.hpp"
 #include "MUtils.hpp"

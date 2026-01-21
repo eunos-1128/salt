@@ -35,7 +35,6 @@
 #include "MClipboard.hpp"
 #include "MControls.hpp"
 #include "MDevice.hpp"
-#include "MError.hpp"
 #include "MFile.hpp"
 #include "MPreferences.hpp"
 #include "MPreferencesDialog.hpp"
@@ -459,7 +458,9 @@ void MTerminalView::ReadPreferences()
 	mIgnoreColors = MPrefs::GetBoolean("ignore-color", false);
 
 	// set the color
-	PreviewColors(MPrefs::GetColor("back-color", "#0f290e"), MPrefs::GetColor("selection-color", "#FFD281"));
+	PreviewColors(
+		MPrefs::GetColor("back-color", MColor("#0f290e")),
+		MPrefs::GetColor("selection-color", MColor("#FFD281")));
 
 	MDevice dev;
 	dev.SetFont(mFont);
@@ -4315,12 +4316,12 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			break;
 
 		case eDECELR:
-			PRINT(("DECELR iets met de muis doen?"));
+			// PRINT(("DECELR iets met de muis doen?"));
 			// hmmmm
 			break;
 
 		default:
-			PRINT(("Unhandled CSI level 1 command: %s (%x)", mCtrlSeq.c_str(), mCSICmd));
+			// PRINT(("Unhandled CSI level 1 command: %s (%x)", mCtrlSeq.c_str(), mCSICmd));
 			break;
 	}
 }
@@ -4831,7 +4832,7 @@ void MTerminalView::SelectCharSet(uint8_t inChar)
 	{
 		if (mDECSCL == 1 and charset > 1)
 		{
-			PRINT(("Unsupported set G%d", charset));
+			// PRINT(("Unsupported set G%d", charset));
 			return;
 		}
 
@@ -5316,7 +5317,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 			case 10:
 				if (mArgString == "?")
 				{
-					std::string textColor = mTerminalColors[eText].hex();
+					std::string textColor = mTerminalColors[eText].str();
 
 					SendCommand(
 						"\033]11;rgb:" +
@@ -5332,7 +5333,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 			case 11:
 				if (mArgString == "?")
 				{
-					std::string backColor = mTerminalColors[eBack].hex();
+					std::string backColor = mTerminalColors[eBack].str();
 
 					SendCommand(
 						"\033]11;rgb:" +
@@ -5372,7 +5373,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 				break;
 
 			default:
-				PRINT(("Ignored %d OSC option", mArgs[0]));
+				// PRINT(("Ignored %d OSC option", mArgs[0]));
 				break;
 		}
 	}
@@ -5457,7 +5458,7 @@ void MTerminalView::EscapeAPC(uint8_t inChar)
 				break;
 
 			default:
-				PRINT(("Ignored %d APC option", mArgs[0]));
+				// PRINT(("Ignored %d APC option", mArgs[0]));
 				break;
 		}
 	}
@@ -5577,7 +5578,7 @@ void MTerminalView::Beep()
 	if (mGraphicalBeep and now - mLastBeep > 250ms)
 	{
 		if (mAnimationManager->Update())
-			PRINT(("duh"));
+			;// PRINT(("duh"));
 
 		MStoryboard *storyboard = mAnimationManager->CreateStoryboard();
 		storyboard->AddTransition(mGraphicalBeep, 0.75, 75ms, "acceleration-decelleration");
@@ -5616,7 +5617,7 @@ void MTerminalView::SetResetMode(uint32_t inMode, bool inANSI, bool inSet)
 				mLNM = inSet;
 				break;
 			default:
-				PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
+				// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
 				break;
 		}
 	}
@@ -5687,7 +5688,7 @@ void MTerminalView::SetResetMode(uint32_t inMode, bool inANSI, bool inSet)
 			case 1001:
 			case 1002:
 			case 1003:
-				PRINT(("%s mouse mode for %d", inSet ? "set" : "reset", inMode));
+				// PRINT(("%s mouse mode for %d", inSet ? "set" : "reset", inMode));
 				if (inSet)
 					mMouseMode = (MouseTrackingMode)inMode;
 				else
@@ -5731,7 +5732,7 @@ void MTerminalView::SetResetMode(uint32_t inMode, bool inANSI, bool inSet)
 				break;
 
 			default:
-				PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
+				// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
 				break;
 		}
 	}

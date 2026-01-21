@@ -39,6 +39,7 @@
 #include "MUnicode.hpp"
 #include "MUtils.hpp"
 
+#include <iomanip>
 #include <pinch.hpp>
 
 #include <charconv>
@@ -125,7 +126,7 @@ MPreferencesDialog::MPreferencesDialog()
 	ReplaceAll(answerback, "\t", "\\t");
 	SetText("answer-back", answerback);
 
-	SetColor("back-color", MPrefs::GetColor("back-color", "#0f290e"));
+	SetColor("back-color", MPrefs::GetColor("back-color", MColor("#0f290e")));
 	MColorSwatch *swatch = dynamic_cast<MColorSwatch *>(FindSubViewByID("back-color"));
 	if (swatch != nullptr)
 	{
@@ -138,7 +139,7 @@ MPreferencesDialog::MPreferencesDialog()
 			kBlack });
 	}
 
-	SetColor("selection-color", MPrefs::GetColor("selection-color", "#FFD281"));
+	SetColor("selection-color", MPrefs::GetColor("selection-color", MColor("#FFD281")));
 	swatch = dynamic_cast<MColorSwatch *>(FindSubViewByID("selection-color"));
 	if (swatch)
 	{
@@ -375,6 +376,7 @@ void MPreferencesDialog::ButtonClicked(const string &inID)
 
 void MPreferencesDialog::TextChanged(const string &inID, const string &inText)
 {
+	std::cerr << "Changed: " << inID << " to " << std::quoted(inText) << '\n';
 	// if (inID == "recent-count")
 
 

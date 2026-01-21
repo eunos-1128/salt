@@ -96,8 +96,7 @@ add_subdirectory(manual)
 file(GLOB salt_src ${CMAKE_SOURCE_DIR}/src/*.cpp)
 # file(GLOB mgui_src ${CMAKE_SOURCE_DIR}/libmgui/src/*.cpp)
 # file(GLOB mgui_gtk_src ${CMAKE_SOURCE_DIR}/libmgui/src/Gtk/*.cpp)
-
-list(FILTER mgui_src EXCLUDE REGEX ${CMAKE_SOURCE_DIR}/libmgui/src/MSound.cpp)
+# list(FILTER mgui_src EXCLUDE REGEX ${CMAKE_SOURCE_DIR}/libmgui/src/MSound.cpp)
 
 add_executable(salt
     ${salt_src}
@@ -116,11 +115,11 @@ set(RESOURCES
     ${CMAKE_BINARY_DIR}/manual/salt.1)
 
 target_compile_features(salt PUBLIC cxx_std_20)
-target_include_directories(salt
-    PRIVATE
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/libmgui/include)
+# target_include_directories(salt
+#     PRIVATE
+#     ${CMAKE_BINARY_DIR}
+#     ${CMAKE_CURRENT_SOURCE_DIR}/lib
+#     ${CMAKE_CURRENT_SOURCE_DIR}/libmgui/include)
 target_compile_definitions(salt PUBLIC USE_RSRC)
 target_link_libraries(salt pinch::pinch mcfp::mcfp zeem::zeem zeep::zeep mgui::mgui)
 
