@@ -581,7 +581,7 @@ void MTerminalView::ResetCursor()
 {
 	mCursor.x = 0;
 	mCursor.y = 0;
-	mCursor.style = MStyle(kStyleNormal);
+	mCursor.style = kStyleNormal;
 	mCursor.charSetG[0] = kUSCharSet;
 	mCursor.charSetGSel[0] = 'B';
 	mCursor.charSetG[1] = kLineCharSet;
@@ -671,7 +671,7 @@ void MTerminalView::SoftReset()
 	mMarginBottom = mTerminalHeight - 1;
 	mDECNRCM = false;
 
-	mCursor.style = MStyle();
+	mCursor.style = kStyleNormal;
 	mCursor.charSetG[0] = kUSCharSet;
 	mCursor.charSetGSel[0] = 'B';
 	mCursor.charSetG[1] = kLineCharSet;
@@ -1279,88 +1279,34 @@ void MTerminalView::Draw()
 				}
 			}
 
-			const int
-				eNormalBack = -1,
-				eNormalText = -2,
-				eNormalBold = -3;
-
-			int textColorIx = eNormalText, backColorIx = eNormalBack;
-
-			unicode uc = line[c];
-			MStyle st = line[c];
-			int linkNr = line[c].GetHyperLink();
+			auto [uc, st, fgc, bgc, linkNr, tab] = line[c];
 
 			if (uc == 0 or st & kStyleInvisible)
 				uc = ' ';
 
-			if (st & kStyleBold)
-				textColorIx = eNormalBold;
+			MColor textC = mTerminalColors[st & kStyleBold ? eBold : eText],
+				backC = mTerminalColors[eBack];
 
 			if (not mIgnoreColors)
 			{
-				if (st.GetForeColor() == kXTermColorRegularBack)
-					textColorIx = eNormalBack;
-				else if (st.GetForeColor() == kXTermColorRegularText)
-					textColorIx = eNormalText;
-				else if (st.GetForeColor() != kXTermColorNone)
-					textColorIx = st.GetForeColor();
+				if (auto clr = line[c].GetForeColor())
+					textC = *clr;
 
-				if (st.GetBackColor() == kXTermColorRegularBack)
-					backColorIx = eNormalBack;
-				else if (st.GetBackColor() == kXTermColorRegularText)
-					backColorIx = eNormalText;
-				else if (st.GetBackColor() != kXTermColorNone)
-					backColorIx = st.GetBackColor();
-
-				if (st & kStyleBold and (textColorIx >= kXTermColorBlack and textColorIx <= kXTermColorWhite))
-					textColorIx += 8;
+				if (auto clr = line[c].GetBackColor())
+					backC = *clr;
 			}
 
 			if (((st & kStyleInverse) xor mDECSCNM) or
 				(lineNr == mTerminalHeight and (st & kStyleInverse) == 0))
 			{
-				std::swap(textColorIx, backColorIx);
-			}
-
-			MColor textC, backC;
-
-			switch (textColorIx)
-			{
-				case eNormalBack:
-					textC = mTerminalColors[eBack];
-					break;
-				case eNormalText:
-					textC = mTerminalColors[eText];
-					break;
-				case eNormalBold:
-					textC = mTerminalColors[eBold];
-					break;
-				default:
-					textC = k256AnsiColors[textColorIx];
-					break;
-			}
-
-			switch (backColorIx)
-			{
-				case eNormalBack:
-					backC = mTerminalColors[eBack];
-					break;
-				case eNormalText:
-					backC = mTerminalColors[eText];
-					break;
-				case eNormalBold:
-					backC = mTerminalColors[eBold];
-					break;
-				default:
-					backC = k256AnsiColors[backColorIx];
-					break;
+				std::swap(textC, backC);
 			}
 
 			if (c >= sc1 and c < sc2) // 'selected!'
 				backC = selectionColor;
 
-			if (textColorIx < 16 and st.GetForeColor() != kXTermColorRegularBack and st.GetBackColor() != kXTermColorRegularText)
-				textC = textC.Distinct(backC);
+			// if (textColorIx < 16 and st.GetForeColor() != kXTermColorRegularBack and st.GetBackColor() != kXTermColorRegularText)
+				// textC = textC.Distinct(backC);
 
 			if (st & kStyleBlink and mBlinkOn)
 				textC = backC;
@@ -3012,7 +2958,7 @@ void MTerminalView::WriteChar(unicode inChar)
 	if (mIRM)
 		buffer->InsertCharacter(mCursor.y, mCursor.x);
 
-	buffer->SetCharacter(mCursor.y, mCursor.x, inChar, mCursor.style, mHyperLink);
+	buffer->SetCharacter(mCursor.y, mCursor.x, inChar, mCursor.style, mCursor.foreground, mCursor.background, mHyperLink);
 
 	++mCursor.x;
 
@@ -3735,10 +3681,10 @@ void MTerminalView::EscapeStart(uint8_t inChar)
 			break;
 
 		case 'V':
-			mCursor.style.SetFlag(kProtected);
+			mCursor.style |= kProtected;
 			break;
 		case 'W':
-			mCursor.style.ClearFlag(kProtected);
+			mCursor.style &= kProtected;
 			break;
 
 		// unimplemented for now
@@ -4010,147 +3956,149 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 				switch (a)
 				{
 					case 0:
-						mCursor.style = MStyle();
-						mBuffer->SetColors(kXTermColorNone, kXTermColorNone);
+						mCursor.style = kStyleNormal;
+						mCursor.foreground.reset();
+						mCursor.background.reset();
+						mBuffer->ResetColors();
 						break;
 					case 1:
-						mCursor.style.SetFlag(kStyleBold);
+						mCursor.style |= kStyleBold;
 						break;
 					case 4:
-						mCursor.style.SetFlag(kStyleUnderline);
+						mCursor.style |= kStyleUnderline;
 						break;
 					case 5:
-						mCursor.style.SetFlag(kStyleBlink);
+						mCursor.style |= kStyleBlink;
 						break;
 					case 7:
-						mCursor.style.SetFlag(kStyleInverse);
+						mCursor.style |= kStyleInverse;
 						break;
 					case 8:
-						mCursor.style.SetFlag(kStyleInvisible);
+						mCursor.style |= kStyleInvisible;
 						break;
 					case 22:
-						mCursor.style.ClearFlag(kStyleBold);
+						mCursor.style &= ~kStyleBold;
 						break;
 					case 24:
-						mCursor.style.ClearFlag(kStyleUnderline);
+						mCursor.style &= ~kStyleUnderline;
 						break;
 					case 25:
-						mCursor.style.ClearFlag(kStyleBlink);
+						mCursor.style &= ~kStyleBlink;
 						break;
 					case 27:
-						mCursor.style.ClearFlag(kStyleInverse);
+						mCursor.style &= ~kStyleInverse;
 						break;
 
 					// vt300
 					case 28:
-						mCursor.style.ClearFlag(kStyleInvisible);
+						mCursor.style &= ~kStyleInvisible;
 						break;
 
 					// xterm colors
 					case 30:
-						mCursor.style.SetForeColor(kXTermColorRegularBack);
+						mCursor.foreground = mTerminalColors[kXTermColorBlack];
 						break;
 					case 31:
-						mCursor.style.SetForeColor(kXTermColorRed);
+						mCursor.foreground = k256AnsiColors[kXTermColorRed];
 						break;
 					case 32:
-						mCursor.style.SetForeColor(kXTermColorGreen);
+						mCursor.foreground = k256AnsiColors[kXTermColorGreen];
 						break;
 					case 33:
-						mCursor.style.SetForeColor(kXTermColorYellow);
+						mCursor.foreground = k256AnsiColors[kXTermColorYellow];
 						break;
 					case 34:
-						mCursor.style.SetForeColor(kXTermColorBlue);
+						mCursor.foreground = k256AnsiColors[kXTermColorBlue];
 						break;
 					case 35:
-						mCursor.style.SetForeColor(kXTermColorMagenta);
+						mCursor.foreground = k256AnsiColors[kXTermColorMagenta];
 						break;
 					case 36:
-						mCursor.style.SetForeColor(kXTermColorCyan);
+						mCursor.foreground = k256AnsiColors[kXTermColorCyan];
 						break;
 					case 37:
-						mCursor.style.SetForeColor(kXTermColorNone);
+						mCursor.foreground = k256AnsiColors[kXTermColorWhite];
 						break;
 					case 39:
-						mCursor.style.SetForeColor(kXTermColorNone);
+						mCursor.foreground.reset();
 						break;
 
 					case 40:
-						mCursor.style.SetBackColor(kXTermColorNone);
+						mCursor.background = mTerminalColors[kXTermColorBlack];
 						break;
 					case 41:
-						mCursor.style.SetBackColor(kXTermColorRed);
+						mCursor.background = k256AnsiColors[kXTermColorRed];
 						break;
 					case 42:
-						mCursor.style.SetBackColor(kXTermColorGreen);
+						mCursor.background = k256AnsiColors[kXTermColorGreen];
 						break;
 					case 43:
-						mCursor.style.SetBackColor(kXTermColorYellow);
+						mCursor.background = k256AnsiColors[kXTermColorYellow];
 						break;
 					case 44:
-						mCursor.style.SetBackColor(kXTermColorBlue);
+						mCursor.background = k256AnsiColors[kXTermColorBlue];
 						break;
 					case 45:
-						mCursor.style.SetBackColor(kXTermColorMagenta);
+						mCursor.background = k256AnsiColors[kXTermColorMagenta];
 						break;
 					case 46:
-						mCursor.style.SetBackColor(kXTermColorCyan);
+						mCursor.background = k256AnsiColors[kXTermColorCyan];
 						break;
 					case 47:
-						mCursor.style.SetBackColor(kXTermColorRegularText);
+						mCursor.background = k256AnsiColors[kXTermColorWhite];
 						break;
 					case 49:
-						mCursor.style.SetBackColor(kXTermColorNone);
+						mCursor.background.reset();
 						break;
 
 					case 90:
-						mCursor.style.SetForeColor(kXTermColorBrightBlack);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightBlack];
 						break;
 					case 91:
-						mCursor.style.SetForeColor(kXTermColorBrightRed);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightRed];
 						break;
 					case 92:
-						mCursor.style.SetForeColor(kXTermColorBrightGreen);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightGreen];
 						break;
 					case 93:
-						mCursor.style.SetForeColor(kXTermColorBrightYellow);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightYellow];
 						break;
 					case 94:
-						mCursor.style.SetForeColor(kXTermColorBrightBlue);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightBlue];
 						break;
 					case 95:
-						mCursor.style.SetForeColor(kXTermColorBrightMagenta);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightMagenta];
 						break;
 					case 96:
-						mCursor.style.SetForeColor(kXTermColorBrightCyan);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightCyan];
 						break;
 					case 97:
-						mCursor.style.SetForeColor(kXTermColorBrightWhite);
+						mCursor.foreground = k256AnsiColors[kXTermColorBrightWhite];
 						break;
 
 					case 100:
-						mCursor.style.SetBackColor(kXTermColorBrightBlack);
+						mCursor.background = k256AnsiColors[kXTermColorBrightBlack];
 						break;
 					case 101:
-						mCursor.style.SetBackColor(kXTermColorBrightRed);
+						mCursor.background = k256AnsiColors[kXTermColorBrightRed];
 						break;
 					case 102:
-						mCursor.style.SetBackColor(kXTermColorBrightGreen);
+						mCursor.background = k256AnsiColors[kXTermColorBrightGreen];
 						break;
 					case 103:
-						mCursor.style.SetBackColor(kXTermColorBrightYellow);
+						mCursor.background = k256AnsiColors[kXTermColorBrightYellow];
 						break;
 					case 104:
-						mCursor.style.SetBackColor(kXTermColorBrightBlue);
+						mCursor.background = k256AnsiColors[kXTermColorBrightBlue];
 						break;
 					case 105:
-						mCursor.style.SetBackColor(kXTermColorBrightMagenta);
+						mCursor.background = k256AnsiColors[kXTermColorBrightMagenta];
 						break;
 					case 106:
-						mCursor.style.SetBackColor(kXTermColorBrightCyan);
+						mCursor.background = k256AnsiColors[kXTermColorBrightCyan];
 						break;
 					case 107:
-						mCursor.style.SetBackColor(kXTermColorBrightWhite);
+						mCursor.background = k256AnsiColors[kXTermColorBrightWhite];
 						break;
 
 					// color support
@@ -4166,12 +4114,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 								clr.green = mArgs[++i];
 								clr.blue = mArgs[++i];
 
-								uint8_t colorIndex = LookupColor(clr);
-
 								if (a == 38)
-									mCursor.style.SetForeColor((MXTermColor)colorIndex);
+									mCursor.foreground = clr;
 								else
-									mCursor.style.SetBackColor((MXTermColor)colorIndex);
+									mCursor.background = clr;
 
 								break;
 							}
@@ -4180,9 +4126,9 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 							{
 								uint8_t colorIndex = static_cast<uint8_t>(mArgs[++i]);
 								if (a == 38)
-									mCursor.style.SetForeColor((MXTermColor)colorIndex);
+									mCursor.foreground = k256AnsiColors[colorIndex];
 								else
-									mCursor.style.SetBackColor((MXTermColor)colorIndex);
+									mCursor.background = k256AnsiColors[colorIndex];
 								break;
 							}
 						}
@@ -4192,7 +4138,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 				}
 
 				if ((a >= 30 and a <= 49) or (a >= 90 and a <= 107))
-					mBuffer->SetColors(mCursor.style.GetForeColor(), mCursor.style.GetBackColor());
+					mBuffer->SetColors(mCursor.foreground, mCursor.background);
 			}
 			break;
 		// SU -- Pan Down
@@ -4382,31 +4328,31 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 					switch (a)
 					{
 						case 0:
-							inChar = MStyle();
+							inChar.SetStyle(kStyleNormal);
 							break;
 						case 1:
-							inChar |= kStyleBold;
+							inChar.SetFlag(kStyleBold);
 							break;
 						case 4:
-							inChar |= kStyleUnderline;
+							inChar.SetFlag(kStyleUnderline);
 							break;
 						case 5:
-							inChar |= kStyleBlink;
+							inChar.SetFlag(kStyleBlink);
 							break;
 						case 7:
-							inChar |= kStyleInverse;
+							inChar.SetFlag(kStyleInverse);
 							break;
 						case 21:
-							inChar &= ~kStyleBold;
+							inChar.ResetFlag(kStyleBold);
 							break;
 						case 24:
-							inChar &= ~kStyleUnderline;
+							inChar.ResetFlag(kStyleUnderline);
 							break;
 						case 25:
-							inChar &= ~kStyleBlink;
+							inChar.ResetFlag(kStyleBlink);
 							break;
 						case 27:
-							inChar &= ~kStyleInverse;
+							inChar.ResetFlag(kStyleInverse);
 							break;
 					} });
 			}
@@ -4577,7 +4523,7 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 			{
 				case 1: /* DECCIR */
 				{
-					MStyle st = mCursor.style;
+					auto st = mCursor.style;
 					SendCommand(MFormat("\033P1$u%d;%d;%d;%c;%c;%c;%d;%d;%c;%c%c%c%c\033\\",
 						mCursor.y + 1,
 						mCursor.x + 1,
@@ -4639,10 +4585,10 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 			{
 				case 0:
 				case 2:
-					mCursor.style.ClearFlag(kUnerasable);
+					mCursor.style &= ~kUnerasable;
 					break;
 				case 1:
-					mCursor.style.SetFlag(kUnerasable);
+					mCursor.style |= kUnerasable;
 					break;
 			}
 			break;
@@ -5020,10 +4966,10 @@ void MTerminalView::EscapeDCS(uint8_t inChar)
 					sgr.push_back("7");
 				if (mCursor.style & kStyleInvisible)
 					sgr.push_back("8");
-				if (mCursor.style.GetForeColor() != kXTermColorNone)
-					sgr.push_back(std::to_string(30 + mCursor.style.GetForeColor()));
-				if (mCursor.style.GetBackColor() != kXTermColorNone)
-					sgr.push_back(std::to_string(40 + mCursor.style.GetBackColor()));
+				if (mCursor.foreground)
+					sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
+				if (mCursor.background)
+					sgr.push_back(std::to_string(40 + LookupColor(*mCursor.background)));
 
 				response = MFormat("\033P1$r%s", Join(sgr, ";").c_str());
 			}
@@ -5537,7 +5483,7 @@ void MTerminalView::RestoreCursor(void)
 		mCursor.charSetG[3] = kLineCharSet;
 		mCursor.CSGL = 0;
 		mCursor.CSGR = 2;
-		mCursor.style = MStyle();
+		mCursor.style = kStyleNormal;
 		mCursor.DECOM = false;
 	}
 }

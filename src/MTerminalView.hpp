@@ -313,7 +313,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 		char charSetGSel[4];
 		int CSGL, CSGR;
 		int SS;
-		MStyle style;
+		int style;
+		std::optional<MColor> foreground, background;
 		bool DECOM, DECAWM;
 		bool blink, block;
 	} mCursor, mSaved, mAlternate, mSavedSL;

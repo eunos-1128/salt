@@ -29,10 +29,12 @@
 
 #pragma once
 
+#include "MColor.hpp"
 #include "MTypes.hpp"
 
 #include <cassert>
 #include <deque>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -40,7 +42,6 @@
 // Terminal buffer code. We keep a history of the screen content.
 // Each character on screen is stored in a MChar structure containing
 // the unicode for the character and a style which is a bitfield of styles.
-//
 
 enum MCharStyle
 {
@@ -53,16 +54,15 @@ enum MCharStyle
 
 	// not really a style...
 	kUnerasable = 1 << 5,
-	kProtected = 1 << 6
+	kProtected = 1 << 6,
+
+	// colors
+	kHasFgColor = 1 << 7,
+	kHasBgColor = 1 << 8
 };
 
 enum MXTermColor
 {
-	kXTermColorNone = 256,
-
-	kXTermColorRegularBack,
-	kXTermColorRegularText,
-
 	kXTermColorBlack = 0,
 	kXTermColorRed,
 	kXTermColorGreen,
@@ -82,106 +82,6 @@ enum MXTermColor
 	kXTermColorBrightWhite
 };
 
-class MStyle
-{
-	enum
-	{
-		kForeColorMask = 0x01ff0000,
-		kBackColorMask = 0x0000ff80,
-		kFgShift = 16,
-		kBgShift = 7,
-		kDefaultStyle = kXTermColorNone << kFgShift | kXTermColorNone << kBgShift
-	};
-
-  public:
-	MStyle()
-		: mData(kDefaultStyle)
-	{
-		static_assert(sizeof(MStyle) == 4, "style should be four bytes");
-	}
-
-	explicit MStyle(MCharStyle inStyle)
-		: mData(inStyle)
-	{
-		SetForeColor(kXTermColorNone);
-		SetBackColor(kXTermColorNone);
-	}
-	//	explicit MStyle(uint32_t inValue) : mData(inValue) {}
-
-	MStyle(MXTermColor inForeColor, MXTermColor inBackColor)
-		: mData(0)
-	{
-		SetForeColor(inForeColor);
-		SetBackColor(inBackColor);
-	}
-
-	bool operator&(MCharStyle inStyle) const
-	{
-		return (mData & inStyle) != 0;
-	}
-
-	operator uint32_t() const
-	{
-		return mData;
-	}
-
-	void SetFlag(MCharStyle inStyle)
-	{
-		mData |= inStyle;
-	}
-
-	void ReverseFlag(MCharStyle inStyle)
-	{
-		mData ^= inStyle;
-	}
-
-	void ClearFlag(MCharStyle inStyle)
-	{
-		mData &= ~inStyle;
-	}
-
-	void ChangeFlags(uint32_t inMode)
-	{
-		switch (inMode)
-		{
-			case 0: mData &= ~(kStyleBold | kStyleUnderline | kStyleInverse | kStyleBlink); break;
-			case 1: mData |= kStyleBold; break;
-			case 4: mData |= kStyleUnderline; break;
-			case 5: mData |= kStyleBlink; break;
-			case 7: mData |= kStyleInverse; break;
-			case 21: mData &= ~kStyleBold; break;
-			case 24: mData &= ~kStyleUnderline; break;
-			case 25: mData &= ~kStyleBlink; break;
-			case 27: mData &= ~kStyleInverse; break;
-		}
-	}
-
-	MXTermColor GetForeColor() const
-	{
-		return (MXTermColor)((mData & kForeColorMask) >> kFgShift);
-	}
-
-	void SetForeColor(MXTermColor inColor)
-	{
-		mData &= ~kForeColorMask;
-		mData |= ((uint32_t)inColor << kFgShift) & kForeColorMask;
-	}
-
-	MXTermColor GetBackColor() const
-	{
-		return (MXTermColor)((mData & kBackColorMask) >> kBgShift);
-	}
-
-	void SetBackColor(MXTermColor inColor)
-	{
-		mData &= ~kBackColorMask;
-		mData |= ((uint32_t)inColor << kBgShift) & kBackColorMask;
-	}
-
-  private:
-	uint32_t mData;
-};
-
 // MChar is a container for both a unicode and the style associated with
 // this character in the buffer. Keeping them together makes coding easier.
 // Unicode is limited to 1ffff, Everything in Plane 2 and up is not supported.
@@ -191,17 +91,19 @@ class MChar
   public:
 	MChar() = default;
 
-	MChar(MXTermColor inForeColor, MXTermColor inBackColor) noexcept
-		: mUnicode(' ')
-		, mStyle(inForeColor, inBackColor)
+	MChar(std::optional<MColor> inForeColor, std::optional<MColor> inBackColor) noexcept
 	{
+		SetForeColor(inForeColor);
+		SetBackColor(inBackColor);
 	}
 
-	MChar(unicode inChar, MStyle inStyle, int inHyperLink = 0) noexcept
+	MChar(unicode inChar, int inStyle, std::optional<MColor> inForeColor = {}, std::optional<MColor> inBackColor = {}, uint16_t inHyperLink = 0) noexcept
 		: mUnicode(inChar)
 		, mStyle(inStyle)
 		, mHyperLink(inHyperLink)
 	{
+		SetForeColor(inForeColor);
+		SetBackColor(inBackColor);
 	}
 
 	MChar(const MChar &inChar) noexcept = default;
@@ -214,58 +116,177 @@ class MChar
 		return *this;
 	}
 
-	MChar &operator=(char inChar) noexcept
+	constexpr char32_t GetUnicode() const
 	{
-		mUnicode = inChar;
-		return *this;
+		return mUnicode & 0x1FFFFF;
 	}
 
-	MChar &operator=(MStyle inStyle) noexcept
+	void SetUnicode(char32_t inUnicode)
 	{
-		mStyle = inStyle;
-		return *this;
+		mUnicode = inUnicode & 0x1FFFFF;
+	}
+
+	constexpr int GetStyle() const
+	{
+		return mStyle & 0x01FF;
+	}
+
+	void SetStyle(int inStyle)
+	{
+		mStyle = inStyle & 0x1FF;
 	}
 
 	bool operator==(char rhs) const { return mUnicode == static_cast<char32_t>(rhs); }
 	bool operator==(unicode rhs) const { return mUnicode == rhs; }
-	bool operator==(MStyle rhs) const { return mStyle == rhs; }
+	// bool operator==(MStyle rhs) const { return mStyle == rhs; }
 
 	bool operator!=(char rhs) const { return mUnicode != static_cast<char32_t>(rhs); }
 	bool operator!=(unicode rhs) const { return mUnicode != rhs; }
-	bool operator!=(MStyle rhs) const { return mStyle != rhs; }
+	// bool operator!=(MStyle rhs) const { return mStyle != rhs; }
 
 	bool operator&(MCharStyle inStyle) const { return (mStyle & inStyle) != 0; }
 
-	void operator|=(char32_t inStyle) { mStyle.SetFlag((MCharStyle)inStyle); }
-	void operator&=(char32_t inStyle) { mStyle.ClearFlag((MCharStyle)inStyle); }
+	// void operator|=(char32_t inStyle) { mStyle |= inStyle; }
+	// void operator&=(char32_t inStyle) { mStyle &= ~inStyle; }
 
-	void ReverseFlag(MCharStyle inStyle) { mStyle.ReverseFlag(inStyle); }
-	void ChangeFlags(char32_t inMode) { mStyle.ChangeFlags(inMode); }
+	void SetFlag(MCharStyle inStyle)
+	{
+		mStyle |= inStyle;
+	}
 
-	operator unicode() const { return mUnicode; }
-	operator MStyle() const { return mStyle; }
+	void ResetFlag(MCharStyle inStyle)
+	{
+		mStyle &= ~inStyle;
+	}
+
+	void ReverseFlag(MCharStyle inStyle) { mStyle ^= inStyle; }
+	void ChangeFlags(char32_t inMode)
+	{
+		switch (inMode)
+		{
+			case 0: mStyle &= ~(kStyleBold | kStyleUnderline | kStyleInverse | kStyleBlink); break;
+			case 1: mStyle |= kStyleBold; break;
+			case 4: mStyle |= kStyleUnderline; break;
+			case 5: mStyle |= kStyleBlink; break;
+			case 7: mStyle |= kStyleInverse; break;
+			case 21: mStyle &= ~kStyleBold; break;
+			case 24: mStyle &= ~kStyleUnderline; break;
+			case 25: mStyle &= ~kStyleBlink; break;
+			case 27: mStyle &= ~kStyleInverse; break;
+		}
+	}
+
+	void SetForeColor(std::optional<MColor> c)
+	{
+		if (c)
+		{
+			mStyle |= kHasFgColor;
+			mForeGroundColor[0] = c->red;
+			mForeGroundColor[1] = c->green;
+			mForeGroundColor[2] = c->blue;
+		}
+		else
+			mStyle &= ~kHasFgColor;
+	}
+
+	std::optional<MColor> GetForeColor() const
+	{
+		if (mStyle & kHasFgColor)
+			return std::make_optional<MColor>(mForeGroundColor[0], mForeGroundColor[1], mForeGroundColor[2]);
+		return {};
+	}
+
+	void SetBackColor(std::optional<MColor> c)
+	{
+		if (c)
+		{
+			mStyle |= kHasBgColor;
+			mBackGroundColor[0] = c->red;
+			mBackGroundColor[1] = c->green;
+			mBackGroundColor[2] = c->blue;
+		}
+		else
+			mStyle &= ~kHasBgColor;
+	}
+
+	std::optional<MColor> GetBackColor() const
+	{
+		if (mStyle & kHasBgColor)
+			return std::make_optional<MColor>(mBackGroundColor[0], mBackGroundColor[1], mBackGroundColor[2]);
+		return {};
+	}
 
 	bool IsTab() const { return mUnicode == ' ' and mIsTab; }
-	void SetTab(bool inIsTab) { assert(mUnicode == ' '); mIsTab = inIsTab; }
+	void SetTab(bool inIsTab)
+	{
+		assert(mUnicode == ' ');
+		mIsTab = inIsTab;
+	}
 
-	void SetHyperLink(int16_t inLinkNr)
+	void SetHyperLink(uint16_t inLinkNr)
 	{
 		mHyperLink = inLinkNr;
 	}
 
-	int16_t GetHyperLink() const
+	uint16_t GetHyperLink() const
 	{
 		return mHyperLink;
 	}
 
+	/// \brief support for structured binding
+	/// 0 is unicode, 1 is style, 2 is forecolor, 3 is backcolor
+	template <std::size_t N>
+	decltype(auto) get() const
+	{
+		if constexpr (N == 0)
+			return GetUnicode();
+		else if constexpr (N == 1)
+			return GetStyle();
+		else if constexpr (N == 2)
+			return GetForeColor();
+		else if constexpr (N == 3)
+			return GetBackColor();
+		else if constexpr (N == 4)
+			return GetHyperLink();
+		else if constexpr (N == 5)
+			return IsTab();
+	}
+
   private:
-	char32_t mUnicode = ' ';
-	MStyle mStyle{};
-	int16_t mHyperLink = 0;
-	bool mIsTab = false;
+	// char32_t mUnicode = ' ';
+	// MStyle mStyle{};
+	// int16_t mHyperLink = 0;
+	// bool mIsTab = false;
+
+	struct
+	{
+		char32_t mUnicode : 21 = ' ';
+		bool mIsTab : 1 = false;
+		uint32_t mStyle : 9 = 0;
+		uint16_t mHyperLink = 0;
+		uint8_t mForeGroundColor[3] = { 255, 255, 255 };
+		uint8_t mBackGroundColor[3] = {};
+	};
 };
 
 static_assert(sizeof(MChar) == 12, "MChar should be 12 bytes");
+
+namespace std
+{
+
+template <>
+struct tuple_size<MChar>
+	: public std::integral_constant<std::size_t, 6>
+{
+};
+
+template <int Ix>
+struct tuple_element<Ix, MChar>
+{
+	using type = decltype(std::declval<MChar>().get<Ix>());
+};
+
+} // namespace std
 
 // --------------------------------------------------------------------
 // Characters are store in lines
@@ -273,7 +294,7 @@ static_assert(sizeof(MChar) == 12, "MChar should be 12 bytes");
 class MLine
 {
   public:
-	MLine(uint32_t inSize, MXTermColor inForeColor, MXTermColor inBackColor);
+	MLine(uint32_t inSize, std::optional<MColor> inForeColor = {}, std::optional<MColor> inBackColor = {});
 
 	MLine(const MLine &rhs);
 
@@ -290,7 +311,7 @@ class MLine
 		return *this;
 	}
 
-	void Delete(uint32_t inColumn, uint32_t inWidth, MXTermColor inForeColor, MXTermColor inBackColor);
+	void Delete(uint32_t inColumn, uint32_t inWidth, std::optional<MColor> inForeColor, std::optional<MColor> inBackColor);
 	void Insert(uint32_t inColumn, uint32_t inWidth);
 
 	MChar &operator[](uint32_t inColumn)
@@ -409,7 +430,7 @@ class MTerminalBuffer
 	void Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnchorLine);
 
 	void SetCharacter(uint32_t inLine, uint32_t inColumn, unicode inChar,
-		MStyle inStyle = MStyle(), int inHyperLink = 0);
+		int inStyle, std::optional<MColor> foreColor, std::optional<MColor> backColor, int inHyperLink);
 
 	void SetIsTab(uint32_t inLine, uint32_t inColumn, bool inIsTab);
 
@@ -477,7 +498,13 @@ class MTerminalBuffer
 	void SelectCharacter(int32_t inLine, int32_t inColumn);
 	void ClearSelection();
 
-	void SetColors(MXTermColor inForeColor, MXTermColor inBackColor)
+	void ResetColors()
+	{
+		mForeColor.reset();
+		mBackColor.reset();
+	}
+
+	void SetColors(std::optional<MColor> inForeColor, std::optional<MColor> inBackColor)
 	{
 		mForeColor = inForeColor;
 		mBackColor = inBackColor;
@@ -522,7 +549,7 @@ class MTerminalBuffer
 	bool mDirty;
 	int32_t mBeginLine, mBeginColumn, mEndLine, mEndColumn;
 	bool mBlockSelection;
-	MXTermColor mForeColor, mBackColor;
+	std::optional<MColor> mForeColor, mBackColor;
 
 	// On screen hyperlinks
 	int mNextHyperLinkNr = 1;

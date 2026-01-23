@@ -29,6 +29,7 @@
 
 #include "MTerminalBuffer.hpp"
 #include "MPreferences.hpp"
+#include "MTerminalColours.hpp"
 #include "MUnicode.hpp"
 
 #include <algorithm>
@@ -40,7 +41,7 @@
 
 // --------------------------------------------------------------------
 
-MLine::MLine(uint32_t inSize, MXTermColor inForeColor, MXTermColor inBackColor)
+MLine::MLine(uint32_t inSize, std::optional<MColor> inForeColor, std::optional<MColor> inBackColor)
 	: mCharacters(new MChar[inSize])
 	, mSize(inSize)
 	, mSoftWrapped(false)
@@ -68,7 +69,7 @@ MLine::~MLine()
 	delete[] mCharacters;
 }
 
-void MLine::Delete(uint32_t inColumn, uint32_t inWidth, MXTermColor inForeColor, MXTermColor inBackColor)
+void MLine::Delete(uint32_t inColumn, uint32_t inWidth, std::optional<MColor> inForeColor, std::optional<MColor> inBackColor)
 {
 	if (inWidth == 0 or inWidth > mSize)
 		inWidth = mSize;
@@ -110,7 +111,7 @@ void swap(MLine &lhs, MLine &rhs) noexcept
 // --------------------------------------------------------------------
 
 MTerminalBuffer::MTerminalBuffer(uint32_t inWidth, uint32_t inHeight, bool inBuffer)
-	: mLines(inHeight, MLine(inWidth, kXTermColorNone, kXTermColorNone))
+	: mLines(inHeight, MLine(inWidth))
 	, mWidth(inWidth)
 	, mDirty(false)
 	, mBeginLine(0)
@@ -118,8 +119,6 @@ MTerminalBuffer::MTerminalBuffer(uint32_t inWidth, uint32_t inHeight, bool inBuf
 	, mEndLine(0)
 	, mEndColumn(0)
 	, mBlockSelection(false)
-	, mForeColor(kXTermColorNone)
-	, mBackColor(kXTermColorNone)
 {
 	mBufferSize = inBuffer ? MPrefs::GetInteger("buffer-size", 5000) : 0;
 }
@@ -344,13 +343,13 @@ void MTerminalBuffer::Clear()
 }
 
 void MTerminalBuffer::SetCharacter(uint32_t inLine, uint32_t inColumn, unicode inChar,
-	MStyle inStyle, int inHyperLink)
+	int inStyle, std::optional<MColor> foreColor, std::optional<MColor> backColor, int inHyperLink)
 {
 	if (inLine >= mLines.size())
 		return;
 
 	MLine &line(mLines[inLine]);
-	line[inColumn] = MChar(inChar, inStyle, inHyperLink);
+	line[inColumn] = MChar(inChar, inStyle, foreColor, backColor, inHyperLink);
 
 	mDirty = true;
 }
@@ -553,7 +552,7 @@ void MTerminalBuffer::FillWithE()
 	{
 		MLine &line(mLines[l]);
 		for (uint32_t column = 0; column < mWidth; ++column)
-			line[column] = MChar('E', MStyle(mForeColor, mBackColor));
+			line[column] = MChar('E', 0, mForeColor, mBackColor);
 	}
 
 	mDirty = true;
@@ -750,7 +749,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 	}
 
 	// strip off trailing white space
-	while (not s.empty() and (wchar_t) s.back() == ' ')
+	while (not s.empty() and s.back().GetUnicode() == ' ')
 		s.pop_back();
 
 	if (inColumn > static_cast<int32_t>(s.size()))
@@ -784,7 +783,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 		nextColumn = column;
 		if (nextColumn >= static_cast<int32_t>(s.size()))
 			break;
-		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column]);
+		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column].GetUnicode());
 		state = kNextWordBreakStateTable[uint8_t(state)][cl];
 	}
 
@@ -797,7 +796,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 		if (column == 0)
 			break;
 		--column;
-		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column]);
+		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column].GetUnicode());
 		state = kPrevWordBreakStateTable[uint8_t(state)][cl];
 	}
 
@@ -863,7 +862,7 @@ std::string MTerminalBuffer::GetText(int32_t inBeginLine, int32_t inBeginColumn,
 		{
 			auto ch = line[c];
 
-			char32_t cc = ch;
+			char32_t cc = ch.GetUnicode();
 			if (not inBlock)
 			{
 				if (tab and ch.IsTab())
@@ -895,7 +894,7 @@ std::string MTerminalBuffer::GetSelectedText() const
 
 unicode MTerminalBuffer::GetChar(int32_t inLine, int32_t inColumn, bool inToLower) const
 {
-	char32_t result = GetLine(inLine)[inColumn];
+	char32_t result = GetLine(inLine)[inColumn].GetUnicode();
 	if (inToLower)
 		result = ToLower(result);
 	return result;
@@ -910,9 +909,9 @@ unicode MTerminalBuffer::GetChar(uint32_t inOffset, bool inToLower) const
 
 	unicode result;
 	if (line >= static_cast<int32_t>(mBuffer.size()))
-		result = mLines[line - mBuffer.size()][column];
+		result = mLines[line - mBuffer.size()][column].GetUnicode();
 	else
-		result = mBuffer[mBuffer.size() - line - 1][column];
+		result = mBuffer[mBuffer.size() - line - 1][column].GetUnicode();
 
 	if (inToLower)
 		result = ToLower(result);
