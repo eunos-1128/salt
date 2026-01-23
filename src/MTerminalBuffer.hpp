@@ -562,5 +562,5 @@ class MTerminalBuffer
 
 	std::vector<MHyperLink> mHyperLinks;
 	std::string mHoveredLink;
-	int32_t mHoverdLinkBeginLine, mHoverdLinkBeginColumn, mHoverdLinkEndLine, mHoverdLinkEndColumn;
+	int32_t mHoverdLinkBeginLine = 0, mHoverdLinkBeginColumn = 0, mHoverdLinkEndLine = 0, mHoverdLinkEndColumn = 0;
 };

@@ -43,22 +43,20 @@
 #include "MSound.hpp"
 #include "MStrings.hpp"
 #include "MTerminalBuffer.hpp"
+#include "MTerminalColours.hpp"
 #include "MUnicode.hpp"
 #include "MUtils.hpp"
 #include "MVT220CharSets.hpp"
 #include "MWindow.hpp"
 
-#include "MTerminalColours.hpp"
-
 #include <pinch/debug.hpp>
-#include <zeep/uri.hpp>
 #include <zeep/crypto.hpp>
+#include <zeep/uri.hpp>
 
 #include <chrono>
 #include <cmath>
 #include <map>
 #include <source_location>
-#include <thread>
 
 // --------------------------------------------------------------------
 
@@ -99,17 +97,6 @@ uint32_t
 
 std::chrono::system_clock::duration
 	kSmoothScrollDelay = std::chrono::milliseconds(25);
-
-// enum {
-//	kTextColor,
-//	kBackColor,
-//	kBoldColor,
-//
-//	kColorCount
-// };
-//
-MColor
-	sSelectionColor;
 
 std::string
 	kControlBreakMessage("Hello, world!");
@@ -209,8 +196,8 @@ enum MPFKKey
 
 struct MPFK
 {
-	bool clear;
-	bool locked;
+	bool clear{};
+	bool locked{};
 	std::map<uint32_t, std::string> key;
 };
 
@@ -241,6 +228,7 @@ class MFormat
 // The MTerminalView class.
 
 std::list<MTerminalView *> MTerminalView::sTerminalList;
+MColor MTerminalView::sSelectionColor;
 
 MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	MStatusbar *inStatusbar, MScrollbar *inScrollbar, MSearchPanel *inSearchPanel,
@@ -314,9 +302,7 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	mDebugUpdate = false;
 #endif
 	std::string encoding = MPrefs::GetString("default-encoding", "utf-8");
-	if (encoding == "utf-8")
-		mEncoding = kEncodingUTF8;
-	else if (encoding == "iso-8859-1")
+	if (encoding == "iso-8859-1")
 		mEncoding = kEncodingISO88591;
 	else
 		mEncoding = kEncodingUTF8;
@@ -501,7 +487,7 @@ void MTerminalView::PreferencesChanged()
 
 	MRect bounds = GetBounds();
 
-	uint32_t w = static_cast<uint32_t>(ceil(mTerminalWidth * mCharWidth) + 2 * kBorderWidth);
+	uint32_t w = static_cast<uint32_t>(std::ceil(mTerminalWidth * mCharWidth) + 2 * kBorderWidth);
 	uint32_t h = mTerminalHeight * mLineHeight + 2 * kBorderWidth;
 
 	if (mDECSSDT > 0)
@@ -566,7 +552,7 @@ void MTerminalView::PreviewColors(MColor inBackColor, MColor inSectionColor)
 	Invalidate();
 }
 
-void MTerminalView::StatusPartClicked(uint32_t inPart, MRect)
+void MTerminalView::StatusPartClicked(uint32_t  /*inPart*/, MRect /* inRect */)
 {
 	auto info = mTerminalChannel->GetConnectionInfo();
 
@@ -758,9 +744,9 @@ void MTerminalView::ResizeTerminal(uint32_t inColumns, uint32_t inRows, bool inR
 MRect MTerminalView::GetCharacterBounds(uint32_t inLine, uint32_t inColumn)
 {
 	return {
-		static_cast<int32_t>(kBorderWidth + ceil(inColumn * mCharWidth)),
+		static_cast<int32_t>(kBorderWidth + std::ceil(inColumn * mCharWidth)),
 		static_cast<int32_t>(kBorderWidth + inLine * mLineHeight),
-		static_cast<int32_t>(ceil(mCharWidth)),
+		static_cast<int32_t>(std::ceil(mCharWidth)),
 		mLineHeight
 	};
 }
@@ -782,7 +768,7 @@ bool MTerminalView::GetCharacterForPosition(int32_t inX, int32_t inY, int32_t &o
 	}
 	else
 	{
-		outColumn = static_cast<uint32_t>(floor(inX / mCharWidth));
+		outColumn = static_cast<uint32_t>(std::floor(inX / mCharWidth));
 
 		if (outColumn < 0)
 			outColumn = 0;
@@ -929,7 +915,7 @@ void MTerminalView::PointerMotion(int32_t inX, int32_t inY, uint32_t inModifiers
 	{
 		if (std::abs(mLastMouseX - inX) or std::abs(mLastMouseY - inY))
 			SetCursor(MCursor::eNormalCursor);
-		
+
 		mLastMouseX = inX;
 		mLastMouseY = inY;
 
@@ -1044,7 +1030,7 @@ void MTerminalView::ClickReleased(int32_t inX, int32_t inY, uint32_t inModifiers
 	mAnchorLink = 0;
 }
 
-bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t inDeltaX, int32_t inDeltaY, uint32_t inModifiers)
+bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t  /*inDeltaX*/, int32_t inDeltaY, uint32_t inModifiers)
 {
 	if (inDeltaY != 0)
 	{
@@ -1063,7 +1049,7 @@ void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
 	SecondaryMouseButtonClick(inX, inY);
 }
 
-void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY)
+void MTerminalView::SecondaryMouseButtonClick(int32_t  /*inX*/, int32_t  /*inY*/)
 {
 	if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
 	{
@@ -1285,7 +1271,7 @@ void MTerminalView::Draw()
 				uc = ' ';
 
 			MColor textC = mTerminalColors[st & kStyleBold ? eBold : eText],
-				backC = mTerminalColors[eBack];
+				   backC = mTerminalColors[eBack];
 
 			if (not mIgnoreColors)
 			{
@@ -1305,8 +1291,8 @@ void MTerminalView::Draw()
 			if (c >= sc1 and c < sc2) // 'selected!'
 				backC = selectionColor;
 
-			// if (textColorIx < 16 and st.GetForeColor() != kXTermColorRegularBack and st.GetBackColor() != kXTermColorRegularText)
-				// textC = textC.Distinct(backC);
+			if (not fgc and not bgc and textC == mTerminalColors[eText])
+				textC = textC.Distinct(backC);
 
 			if (st & kStyleBlink and mBlinkOn)
 				textC = backC;
@@ -1327,7 +1313,7 @@ void MTerminalView::Draw()
 				{
 					caretRect = GetCharacterBounds(mCursor.y, mCursor.x);
 					caretRect.height = 2;
-					caretRect.y += static_cast<int32_t>(ceil(dev.GetAscent()));
+					caretRect.y += static_cast<int32_t>(std::ceil(dev.GetAscent()));
 					caretColor = mTerminalColors[eBold].Distinct(backC);
 				}
 			}
@@ -1403,7 +1389,7 @@ void MTerminalView::Draw()
 	}
 }
 
-void MTerminalView::AdjustCursor(int32_t inX, int32_t inY, uint32_t inModifiers)
+void MTerminalView::AdjustCursor(int32_t  /*inX*/, int32_t  /*inY*/, uint32_t  /*inModifiers*/)
 {
 	SetCursor(eNormalCursor);
 }
@@ -2654,7 +2640,7 @@ void MTerminalView::GetTerminalMetrics(uint32_t inColumns, uint32_t inRows, bool
 	float charWidth = dev.GetXWidth();
 	uint32_t lineHeight = dev.GetLineHeight();
 
-	outWidth = static_cast<uint32_t>(ceil(inColumns * charWidth) + 2 * kBorderWidth);
+	outWidth = static_cast<uint32_t>(std::ceil(inColumns * charWidth) + 2 * kBorderWidth);
 	outHeight = inRows * lineHeight + 2 * kBorderWidth;
 	if (inStatusLine)
 		outHeight += lineHeight;
@@ -3996,7 +3982,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 
 					// xterm colors
 					case 30:
-						mCursor.foreground = mTerminalColors[kXTermColorBlack];
+						mCursor.foreground = k256AnsiColors[kXTermColorBlack];
 						break;
 					case 31:
 						mCursor.foreground = k256AnsiColors[kXTermColorRed];
@@ -4024,7 +4010,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 						break;
 
 					case 40:
-						mCursor.background = mTerminalColors[kXTermColorBlack];
+						mCursor.background = k256AnsiColors[kXTermColorBlack];
 						break;
 					case 41:
 						mCursor.background = k256AnsiColors[kXTermColorRed];
@@ -5524,7 +5510,7 @@ void MTerminalView::Beep()
 	if (mGraphicalBeep and now - mLastBeep > 250ms)
 	{
 		if (mAnimationManager->Update())
-			;// PRINT(("duh"));
+			; // PRINT(("duh"));
 
 		MStoryboard *storyboard = mAnimationManager->CreateStoryboard();
 		storyboard->AddTransition(mGraphicalBeep, 0.75, 75ms, "acceleration-decelleration");
@@ -5882,7 +5868,7 @@ bool MTerminalView::DragAcceptsFile()
 	return IsOpen() and mTerminalChannel->CanDownloadFiles();
 }
 
-void MTerminalView::DragEnter(int32_t inX, int32_t inY)
+void MTerminalView::DragEnter(int32_t  /*inX*/, int32_t inY)
 {
 	mDragWithin = true;
 	Invalidate();
@@ -5898,7 +5884,7 @@ void MTerminalView::DragLeave()
 	Invalidate();
 }
 
-bool MTerminalView::DragAcceptData(int32_t inX, int32_t inY, const std::string &inData)
+bool MTerminalView::DragAcceptData(int32_t  /*inX*/, int32_t  /*inY*/, const std::string &inData)
 {
 	bool result = false;
 	mDragWithin = false;
@@ -5911,7 +5897,7 @@ bool MTerminalView::DragAcceptData(int32_t inX, int32_t inY, const std::string &
 	return result;
 }
 
-bool MTerminalView::DragAcceptFile(int32_t inX, int32_t inY, const std::filesystem::path &inFile)
+bool MTerminalView::DragAcceptFile(int32_t  /*inX*/, int32_t  /*inY*/, const std::filesystem::path &inFile)
 {
 	bool result = false;
 	mDragWithin = false;

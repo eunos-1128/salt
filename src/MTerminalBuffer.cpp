@@ -29,12 +29,10 @@
 
 #include "MTerminalBuffer.hpp"
 #include "MPreferences.hpp"
-#include "MTerminalColours.hpp"
 #include "MUnicode.hpp"
 
 #include <algorithm>
-#include <functional>
-#include <regex>
+#include <ranges>
 #include <set>
 
 #include <zeep/uri.hpp>
@@ -44,9 +42,6 @@
 MLine::MLine(uint32_t inSize, std::optional<MColor> inForeColor, std::optional<MColor> inBackColor)
 	: mCharacters(new MChar[inSize])
 	, mSize(inSize)
-	, mSoftWrapped(false)
-	, mDoubleWidth(false)
-	, mDoubleHeight(false)
 {
 	std::for_each(mCharacters, mCharacters + mSize,
 		[inForeColor, inBackColor](MChar &ch)
@@ -123,9 +118,7 @@ MTerminalBuffer::MTerminalBuffer(uint32_t inWidth, uint32_t inHeight, bool inBuf
 	mBufferSize = inBuffer ? MPrefs::GetInteger("buffer-size", 5000) : 0;
 }
 
-MTerminalBuffer::~MTerminalBuffer()
-{
-}
+MTerminalBuffer::~MTerminalBuffer() = default;
 
 const MLine &MTerminalBuffer::GetLine(int32_t inLine) const
 {
@@ -199,7 +192,7 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 			}
 
 			// strip off trailing spaces of old line
-			std::vector<MChar>::iterator e = chars.end();
+			auto e = chars.end();
 			while (e != chars.begin() and *(e - 1) == ' ')
 				--e;
 			if (e != chars.end())
@@ -210,7 +203,7 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 				continue;
 
 			// create a new line
-			rewrapped.push_front(MLine(inWidth, mForeColor, mBackColor));
+			rewrapped.emplace_front(inWidth, mForeColor, mBackColor);
 
 			// store the new anchor position
 			if (--anchor == 0)
@@ -233,7 +226,7 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 				if (offset < chars.size())
 				{
 					line.SetSoftWrapped(true);
-					rewrapped.push_front(MLine(inWidth, mForeColor, mBackColor));
+					rewrapped.emplace_front(inWidth, mForeColor, mBackColor);
 				}
 			}
 
@@ -246,11 +239,11 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 		swap(mBuffer, rewrapped);
 
 		// fill the mLines array from the new buffer
-		for (std::vector<MLine>::reverse_iterator line = mLines.rbegin(); line != mLines.rend(); ++line)
+		for (auto & mLine : std::views::reverse(mLines))
 		{
 			if (mBuffer.empty())
 				break;
-			*line = mBuffer.front();
+			mLine = mBuffer.front();
 			mBuffer.pop_front();
 		}
 
@@ -360,7 +353,7 @@ void MTerminalBuffer::SetIsTab(uint32_t inLine, uint32_t inColumn, bool inIsTab)
 		return;
 
 	MLine &line(mLines[inLine]);
-	if (auto &ch = line[inColumn]; ch == char32_t(' '))
+	if (auto &ch = line[inColumn]; ch == static_cast<char32_t>(' '))
 		ch.SetTab(inIsTab);
 
 	mDirty = true;
@@ -460,7 +453,10 @@ void MTerminalBuffer::EraseDisplay(uint32_t inLine, uint32_t inColumn, uint32_t 
 					if (l < inLine or (l == inLine and c <= inColumn))
 						line[c] = MChar(mForeColor, mBackColor);
 					break;
-				case 2: line[c] = MChar(mForeColor, mBackColor); break;
+				case 2:
+					line[c] = MChar(mForeColor, mBackColor);
+					break;
+				default:;
 			}
 		}
 	}
@@ -482,6 +478,7 @@ void MTerminalBuffer::EraseLine(uint32_t inLine, uint32_t inColumn, uint32_t inM
 	{
 		case 0: cf = inColumn; break;
 		case 1: ct = inColumn + 1; break;
+		default:;
 	}
 
 	for (uint32_t c = cf; c < ct; ++c)
@@ -662,11 +659,9 @@ TerminalWordBreakClass GetTerminalWordBreakClass(unicode inUnicode)
 				result = eTWB_Hira;
 			else if (inUnicode >= 0x0030a0 and inUnicode <= 0x0030ff)
 				result = eTWB_Kata;
-			else if (inUnicode >= 0x004e00 and inUnicode <= 0x009fff)
-				result = eTWB_Han;
-			else if (inUnicode >= 0x003400 and inUnicode <= 0x004DFF)
-				result = eTWB_Han;
-			else if (inUnicode >= 0x00F900 and inUnicode <= 0x00FAFF)
+			else if ((inUnicode >= 0x004e00 and inUnicode <= 0x009fff) or
+					 (inUnicode >= 0x003400 and inUnicode <= 0x004DFF) or
+					 (inUnicode >= 0x00F900 and inUnicode <= 0x00FAFF))
 				result = eTWB_Han;
 			else
 				result = eTWB_Let;
@@ -784,7 +779,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 		if (nextColumn >= static_cast<int32_t>(s.size()))
 			break;
 		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column].GetUnicode());
-		state = kNextWordBreakStateTable[uint8_t(state)][cl];
+		state = kNextWordBreakStateTable[static_cast<uint8_t>(state)][cl];
 	}
 
 	// then go back
@@ -797,7 +792,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 			break;
 		--column;
 		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column].GetUnicode());
-		state = kPrevWordBreakStateTable[uint8_t(state)][cl];
+		state = kPrevWordBreakStateTable[static_cast<uint8_t>(state)][cl];
 	}
 
 	// check if we did find anything
@@ -949,7 +944,7 @@ bool MTerminalBuffer::FindNext(int32_t &ioLine, int32_t &ioColumn, const std::st
 	int32_t M = what.size();
 
 	// We're looking forward. N is the length of the remaining characters in the buffer
-	int32_t lineCount = static_cast<int32_t>(mBuffer.size() + mLines.size());
+	auto lineCount = static_cast<int32_t>(mBuffer.size() + mLines.size());
 	int32_t line = static_cast<int32_t>(mBuffer.size()) + ioLine;
 	int32_t N = (lineCount - line) * mWidth - ioColumn;
 	int32_t O = lineCount * mWidth - N; // offset from start for ioLine/ioColumn
@@ -1028,14 +1023,14 @@ bool MTerminalBuffer::FindPrevious(int32_t &ioLine, int32_t &ioColumn, const std
 
 		what.push_back(ch);
 	}
-	reverse(what.begin(), what.end());
+	std::ranges::reverse(what);
 
 	// M is the length of the search string
 	int32_t M = what.size();
 
 	// We're looking backward now. N is the length of the characters in the buffer
 	// up until the point where we start.
-	int32_t lineCount = static_cast<int32_t>(mBuffer.size() + mLines.size());
+	auto lineCount = static_cast<int32_t>(mBuffer.size() + mLines.size());
 	int32_t line = static_cast<int32_t>(mBuffer.size()) + ioLine;
 	int32_t N = line * mWidth + ioColumn;
 
@@ -1293,13 +1288,11 @@ void MTerminalBuffer::GarbageCollectHyperlinks()
 		}
 	}
 
-	mHyperLinks.erase(
-		std::remove_if(mHyperLinks.begin(), mHyperLinks.end(),
-			[&inUse](const MHyperLink &link)
-			{
-				return not inUse.contains(link.nr);
-			}),
-		mHyperLinks.end());
+	std::erase_if(mHyperLinks,
+		[&inUse](const MHyperLink &link)
+		{
+			return not inUse.contains(link.nr);
+		});
 }
 
 // // Very simple scan, we only support http and https links for now

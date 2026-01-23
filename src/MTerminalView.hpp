@@ -307,17 +307,19 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	struct MCursorState
 	{
-		bool saved;
-		int x, y;
-		const wchar_t *charSetG[4];
-		char charSetGSel[4];
-		int CSGL, CSGR;
-		int SS;
-		int style;
+		bool saved{};
+		int x{}, y{};
+		const wchar_t *charSetG[4]{};
+		char charSetGSel[4]{};
+		int CSGL{}, CSGR{};
+		int SS{};
+		int style{};
 		std::optional<MColor> foreground, background;
-		bool DECOM, DECAWM;
-		bool blink, block;
+		bool DECOM{}, DECAWM{};
+		bool blink{}, block{};
 	} mCursor, mSaved, mAlternate, mSavedSL;
+
+	static MColor sSelectionColor;
 
 	std::map<int, bool> mSavedPrivateMode;
 
