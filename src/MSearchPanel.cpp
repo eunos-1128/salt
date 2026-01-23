@@ -55,7 +55,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 #endif
 	);
 
-	std::string captionString(_("Find:"));
+	std::string captionString(LocaliseStr("Find:"));
 	dev.SetText(captionString);
 	uint32_t captionWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
@@ -81,7 +81,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 	mTextBox->SetText(MPrefs::GetString("find-recent", ""));
 	AddRoute(eKeyDown, mTextBox->eKeyDown);
 
-	std::string label(_("Case sensitive"));
+	std::string label(LocaliseStr("Case sensitive"));
 	dev.SetText(label);
 	uint32_t labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
@@ -99,7 +99,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 
 	bounds.x += bounds.width + 10;
 
-	label = _("Next");
+	label = LocaliseStr("Next");
 	dev.SetText(label);
 	labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
@@ -111,7 +111,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 
 	bounds.x += bounds.width + 10;
 
-	label = _("Previous");
+	label = LocaliseStr("Previous");
 	dev.SetText(label);
 	labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 

@@ -390,7 +390,7 @@ MTerminalView *MTerminalView::GetFrontTerminal()
 
 void MTerminalView::Open()
 {
-	mStatusbar->SetStatusText(0, _("Trying to connect"), false);
+	mStatusbar->SetStatusText(0, LocaliseStr("Trying to connect"), false);
 
 	MRect bounds = GetBounds();
 
@@ -2744,7 +2744,7 @@ void MTerminalView::Opened()
 
 	value_changer<int32_t> x(mCursor.x, 0), y(mCursor.y, 0);
 
-	mStatusbar->SetStatusText(0, _("Connected"), false);
+	mStatusbar->SetStatusText(0, LocaliseStr("Connected"), false);
 
 	auto info = mTerminalChannel->GetConnectionInfo();
 	if (not info.empty())
@@ -2771,13 +2771,13 @@ void MTerminalView::Closed()
 
 	cEnterTOTP.SetEnabled(false);
 
-	mStatusbar->SetStatusText(0, _("Connection closed"), false);
+	mStatusbar->SetStatusText(0, LocaliseStr("Connection closed"), false);
 
 	mStatusbar->SetStatusText(1, "", false);
 	mBlinkOn = true;
 	Invalidate();
 	const char kReconnectMsg[] = "\r\nPress enter or space to reconnect\r\n";
-	std::string reconnectMsg = _(kReconnectMsg);
+	std::string reconnectMsg = LocaliseStr(kReconnectMsg);
 	mInputBuffer.insert(mInputBuffer.end(), reconnectMsg.begin(), reconnectMsg.end());
 
 	mStatusbar->SetStatusText(1, "", false);

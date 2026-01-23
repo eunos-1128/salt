@@ -278,7 +278,7 @@ void MSshTerminalWindow::ProvidePassword(std::promise<std::string> result)
 {
 	PRINT_THREAD_ID;
 
-	auto dlog = new MAuthDialog(_("Logging in"), this, std::move(result));
+	auto dlog = new MAuthDialog(LocaliseStr("Logging in"), this, std::move(result));
 	dlog->Select();
 }
 
@@ -287,7 +287,7 @@ void MSshTerminalWindow::ProvideCredentials(const std::string &name, const std::
 {
 	PRINT_THREAD_ID;
 
-	auto dlog = new MAuthDialog(_("Logging in"), name,
+	auto dlog = new MAuthDialog(LocaliseStr("Logging in"), name,
 		instruction.empty() ? FormatString("Please enter the requested info for account ^0", name) : instruction,
 		prompts, this, std::move(result));
 	dlog->Select();

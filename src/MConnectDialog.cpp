@@ -216,7 +216,7 @@ void MConnectDialog::SelectedPrivateKey(bool ok, const std::filesystem::path &in
 
 	if (not pinch::ssh_agent::instance().add(key, fileName))
 	{
-		MAuthDialog::RequestSimplePassword(_("Adding Private Key"),
+		MAuthDialog::RequestSimplePassword(LocaliseStr("Adding Private Key"),
 			FormatString("Please enter password for the private key ^0", fileName),
 			this, [key, fileName, this](const std::string &password)
 			{ pinch::ssh_agent::instance().add(key, fileName, password); });

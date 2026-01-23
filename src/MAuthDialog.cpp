@@ -47,12 +47,12 @@ MAuthDialog::MAuthDialog(const std::string &inTitle, MWindow *inParent, std::pro
 {
 	SetTitle(inTitle);
 
-	SetText("instruction", _("Please provide password"));
+	SetText("instruction", LocaliseStr("Please provide password"));
 
 	SetVisible("label-1", true);
 	SetVisible("edit-1", true);
 
-	SetText("label-1", _("Password"));
+	SetText("label-1", LocaliseStr("Password"));
 
 	SetPasswordChar("edit-1");
 
