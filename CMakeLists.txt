@@ -83,14 +83,14 @@ add_compile_options(-pthread)
 find_package(ZLIB REQUIRED)
 
 find_package(mcfp REQUIRED)
-find_package(zeem REQUIRED)
+#find_package(zeem REQUIRED)
 find_package(zeep REQUIRED)
 find_package(pinch REQUIRED)
-# find_package(mgui REQUIRED)
+find_package(mgui REQUIRED)
 # find_package(gxrio REQUIRED)
 
 # add_subdirectory(libpinch EXCLUDE_FROM_ALL)
-add_subdirectory(libmgui EXCLUDE_FROM_ALL)
+# add_subdirectory(libmgui EXCLUDE_FROM_ALL)
 
 # Generate the manual first
 add_subdirectory(manual)
