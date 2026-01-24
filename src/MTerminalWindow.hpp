@@ -63,7 +63,7 @@ class MTerminalWindow : public MWindow
 	bool AllowClose(bool inLogOff) override;
 	void Close() override;
 
-	static bool IsAnyTerminalOpen();
+	static bool IsAnyTerminalActive();
 
 	void SetTitle(const std::string &inTitle) override;
 

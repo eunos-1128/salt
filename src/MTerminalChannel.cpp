@@ -31,23 +31,19 @@
 #include "MAlerts.hpp"
 #include "MSaltApp.hpp"
 #include "MStrings.hpp"
-#include "MUtils.hpp"
-
-#include <pinch.hpp>
 
 #include <asio/experimental/awaitable_operators.hpp>
+#include <pinch.hpp>
 
-#include <fstream>
+#include <algorithm>
+#include <utility>
 
 using namespace std;
 
 // --------------------------------------------------------------------
 // MTerminalChannel
 
-MTerminalChannel::MTerminalChannel()
-	: mRefCount(1)
-{
-}
+MTerminalChannel::MTerminalChannel() = default;
 
 MTerminalChannel::~MTerminalChannel()
 {
@@ -75,8 +71,8 @@ void MTerminalChannel::Disconnect(bool disconnectProxy)
 class MSshTerminalChannel : public MTerminalChannel
 {
   public:
-	MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection);
-	~MSshTerminalChannel();
+	explicit MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection);
+	~MSshTerminalChannel() override;
 
 	void SetMessageCallback(const MessageCallback &inMessageCallback) override;
 
@@ -90,16 +86,17 @@ class MSshTerminalChannel : public MTerminalChannel
 
 	void Close() override;
 
-	bool IsOpen() const override;
+	[[nodiscard]] bool IsOpen() const override;
+	[[nodiscard]] bool AllowClose() const override { return not IsOpen(); }
 
-	bool CanDisconnect() const override { return true; }
+	[[nodiscard]] bool CanDisconnect() const override { return true; }
 	void Disconnect(bool disconnectProxy) override;
 
 	void SendData(string &&inData) override;
 	void SendSignal(const string &inSignal) override;
 	void ReadData(const ReadCallback &inCallback) override;
 
-	bool CanDownloadFiles() const override { return true; }
+	[[nodiscard]] bool CanDownloadFiles() const override { return true; }
 	void DownloadFile(const std::filesystem::path &remotepath, const std::filesystem::path &localpath) override;
 	void UploadFile(const std::filesystem::path &remotepath, const std::filesystem::path &localpath) override;
 	void UploadFileTo(const std::filesystem::path &localpath, const std::filesystem::path &remote_directory) override;
@@ -113,15 +110,13 @@ class MSshTerminalChannel : public MTerminalChannel
 	asio_ns::streambuf mResponse;
 };
 
-MSshTerminalChannel::MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection)
+MSshTerminalChannel::MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection)
 	: mChannel(new pinch::terminal_channel(inConnection))
 {
 	inConnection->keep_alive();
 }
 
-MSshTerminalChannel::~MSshTerminalChannel()
-{
-}
+MSshTerminalChannel::~MSshTerminalChannel() = default;
 
 void MSshTerminalChannel::SetMessageCallback(const MessageCallback &inMessageCallback)
 {
@@ -348,5 +343,5 @@ asio_ns::awaitable<void> MSshTerminalChannel::DoUploadFileTo(std::filesystem::pa
 
 MTerminalChannel *MTerminalChannel::Create(std::shared_ptr<pinch::basic_connection> inConnection)
 {
-	return new MSshTerminalChannel(inConnection);
+	return new MSshTerminalChannel(std::move(inConnection));
 }

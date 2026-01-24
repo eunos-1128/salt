@@ -552,7 +552,7 @@ void MTerminalView::PreviewColors(MColor inBackColor, MColor inSectionColor)
 	Invalidate();
 }
 
-void MTerminalView::StatusPartClicked(uint32_t  /*inPart*/, MRect /* inRect */)
+void MTerminalView::StatusPartClicked(uint32_t /*inPart*/, MRect /* inRect */)
 {
 	auto info = mTerminalChannel->GetConnectionInfo();
 
@@ -1030,7 +1030,7 @@ void MTerminalView::ClickReleased(int32_t inX, int32_t inY, uint32_t inModifiers
 	mAnchorLink = 0;
 }
 
-bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t  /*inDeltaX*/, int32_t inDeltaY, uint32_t inModifiers)
+bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t /*inDeltaX*/, int32_t inDeltaY, uint32_t inModifiers)
 {
 	if (inDeltaY != 0)
 	{
@@ -1049,7 +1049,7 @@ void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
 	SecondaryMouseButtonClick(inX, inY);
 }
 
-void MTerminalView::SecondaryMouseButtonClick(int32_t  /*inX*/, int32_t  /*inY*/)
+void MTerminalView::SecondaryMouseButtonClick(int32_t /*inX*/, int32_t /*inY*/)
 {
 	if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
 	{
@@ -1389,7 +1389,7 @@ void MTerminalView::Draw()
 	}
 }
 
-void MTerminalView::AdjustCursor(int32_t  /*inX*/, int32_t  /*inY*/, uint32_t  /*inModifiers*/)
+void MTerminalView::AdjustCursor(int32_t /*inX*/, int32_t /*inY*/, uint32_t /*inModifiers*/)
 {
 	SetCursor(eNormalCursor);
 }
@@ -5868,7 +5868,7 @@ bool MTerminalView::DragAcceptsFile()
 	return IsOpen() and mTerminalChannel->CanDownloadFiles();
 }
 
-void MTerminalView::DragEnter(int32_t  /*inX*/, int32_t inY)
+void MTerminalView::DragEnter(int32_t /*inX*/, int32_t inY)
 {
 	mDragWithin = true;
 	Invalidate();
@@ -5884,7 +5884,7 @@ void MTerminalView::DragLeave()
 	Invalidate();
 }
 
-bool MTerminalView::DragAcceptData(int32_t  /*inX*/, int32_t  /*inY*/, const std::string &inData)
+bool MTerminalView::DragAcceptData(int32_t /*inX*/, int32_t /*inY*/, const std::string &inData)
 {
 	bool result = false;
 	mDragWithin = false;
@@ -5897,7 +5897,7 @@ bool MTerminalView::DragAcceptData(int32_t  /*inX*/, int32_t  /*inY*/, const std
 	return result;
 }
 
-bool MTerminalView::DragAcceptFile(int32_t  /*inX*/, int32_t  /*inY*/, const std::filesystem::path &inFile)
+bool MTerminalView::DragAcceptFile(int32_t /*inX*/, int32_t /*inY*/, const std::filesystem::path &inFile)
 {
 	bool result = false;
 	mDragWithin = false;

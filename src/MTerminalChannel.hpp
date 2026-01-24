@@ -36,10 +36,10 @@
 class MTerminalChannel
 {
   public:
-	typedef std::function<void(std::error_code)> OpenCallback;
-	typedef std::function<void(const std::string &, const std::string &)> MessageCallback;
-	typedef std::function<void(std::error_code, std::size_t)> WriteCallback;
-	typedef std::function<void(std::error_code, std::streambuf &inData)> ReadCallback;
+	using OpenCallback = std::function<void(std::error_code)>;
+	using MessageCallback = std::function<void(const std::string &, const std::string &)>;
+	using WriteCallback = std::function<void(std::error_code, std::size_t)>;
+	using ReadCallback = std::function<void(std::error_code, std::streambuf &inData)>;
 
 	virtual void SetMessageCallback(const MessageCallback &inMessageCallback);
 
@@ -53,10 +53,11 @@ class MTerminalChannel
 		const std::vector<std::string> &inArgv, const std::vector<std::string> &env,
 		const OpenCallback &inOpenCallback) = 0;
 
-	virtual bool IsOpen() const = 0;
+	[[nodiscard]] virtual bool IsOpen() const = 0;
+	[[nodiscard]] virtual bool AllowClose() const = 0;
 	virtual void Close() = 0;
 
-	virtual bool CanDisconnect() const { return false; }
+	[[nodiscard]] virtual bool CanDisconnect() const { return false; }
 	virtual void Disconnect(bool disconnectProxy);
 
 	void Release();
@@ -76,12 +77,12 @@ class MTerminalChannel
 	static MTerminalChannel *Create(const std::filesystem::path &inCwd);
 	static MTerminalChannel *Create(MTerminalChannel *inCloneFrom);
 
-	const std::vector<std::string> &GetConnectionInfo() const
+	[[nodiscard]] const std::vector<std::string> &GetConnectionInfo() const
 	{
 		return mConnectionInfo;
 	}
 
-	virtual bool CanDownloadFiles() const { return false; }
+	[[nodiscard]] virtual bool CanDownloadFiles() const { return false; }
 	virtual void DownloadFile(const std::filesystem::path &remotepath, const std::filesystem::path &localpath) {}
 	virtual void UploadFile(const std::filesystem::path &remotepath, const std::filesystem::path &localpath) {}
 	virtual void UploadFileTo(const std::filesystem::path &localpath, const std::filesystem::path &remote_directory) {}
@@ -90,11 +91,11 @@ class MTerminalChannel
 	MTerminalChannel();
 	virtual ~MTerminalChannel();
 
-	uint32_t mTerminalWidth, mTerminalHeight, mPixelWidth, mPixelHeight;
+	uint32_t mTerminalWidth{}, mTerminalHeight{}, mPixelWidth{}, mPixelHeight{};
 
 	OpenCallback mOpenCB;
 	MessageCallback mMessageCB;
 
 	std::vector<std::string> mConnectionInfo;
-	uint32_t mRefCount;
+	uint32_t mRefCount{1};
 };

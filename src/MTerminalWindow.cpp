@@ -527,14 +527,14 @@ void MTerminalWindow::HideSearchPanel()
 	mTerminalView->SetFocus();
 }
 
-bool MTerminalWindow::IsAnyTerminalOpen()
+bool MTerminalWindow::IsAnyTerminalActive()
 {
 	bool result = false;
 	MTerminalWindow *w = GetFirstTerminal();
 
 	while (result == false and w != nullptr)
 	{
-		result = w->mTerminalView->IsOpen();
+		result = not w->mTerminalView->AllowClose();
 		w = w->GetNextTerminal();
 	}
 
@@ -545,7 +545,7 @@ bool MTerminalWindow::AllowClose(bool inLogOff)
 {
 	bool result = true;
 
-	if (mTerminalView->IsOpen())
+	if (not mTerminalView->AllowClose())
 	{
 		Select();
 		DisplayAlert(this, "close-session-alert", [this](int result)
