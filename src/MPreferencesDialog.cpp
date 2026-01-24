@@ -376,7 +376,7 @@ void MPreferencesDialog::ButtonClicked(const string &inID)
 
 void MPreferencesDialog::TextChanged(const string &inID, const string &inText)
 {
-	std::cerr << "Changed: " << inID << " to " << std::quoted(inText) << '\n';
+	// std::cerr << "Changed: " << inID << " to " << std::quoted(inText) << '\n';
 	// if (inID == "recent-count")
 
 

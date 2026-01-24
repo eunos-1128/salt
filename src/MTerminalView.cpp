@@ -1291,8 +1291,8 @@ void MTerminalView::Draw()
 			if (c >= sc1 and c < sc2) // 'selected!'
 				backC = selectionColor;
 
-			if (not fgc and not bgc and textC == mTerminalColors[eText])
-				textC = textC.Distinct(backC);
+			// if (not (fgc and bgc)/*  and textC == mTerminalColors[eText] */)
+			// 	textC = textC.Distinct(backC);
 
 			if (st & kStyleBlink and mBlinkOn)
 				textC = backC;
