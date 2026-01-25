@@ -96,10 +96,11 @@ the following script in your .bashrc or .zschrc file.
 
 .. code:: bash
 
-	# A script that produces a prompt containing useful information
+	# A bash script that produces a prompt containing useful information
+	# Source it within your .bashrc file, or copy over the relevant parts
 
-	# Only works with zsh and bash
-	[ -n $BASH_VERSION -o -n $ZSH_VERSION ] || return 0
+	# Only works with bash
+	[ -n $BASH_VERSION ] || return 0
 
 	# Only run in interactive shell, test if 'i' is in $- (the startup options)
 	[[ $- == *i* ]] || return 0
@@ -124,13 +125,6 @@ the following script in your .bashrc or .zschrc file.
 		echo "${enc}"
 	}
 
-	# Generic OSC 7 writing command 
-	osc7_cmd () {
-		# Add command for salt to know the current directory
-		# HOSTNAME is not set in zsh, by default, but HOST is
-		printf "\033]7;file://%s%s\x9c" "${HOSTNAME:-${HOST}}" "$(encodeurl "${PWD}")"
-	}
-
 	# The prompt command function for use in bash
 	prompt_cmd () {
 		local EXIT="$?"
@@ -147,18 +141,53 @@ the following script in your .bashrc or .zschrc file.
 		# Set the title to user@host:dir
 		PS1="\[\e]0;\u@\h: \w\a\]$PS1"
 
-		# And add the OSC 7 command to notify the current host and dir
-		cwd=$(osc7_cmd)
-		PS1="\[$(osc7_cmd)\]$PS1"
+		# Add command for terminal to know the current directory
+		PS1="$PS1\[\e]7;file://${HOSTNAME:-${HOST}}$(encodeurl $(pwd))\a\]"
 	}
 
 	# And add this command to the prompt, depending on the shell
 	case "$TERM" in
 	xterm*|vte*|salt*)
-		[ -n "$BASH_VERSION" ] && PROMPT_COMMAND="prompt_cmd"
-		[ -n "$ZSH_VERSION"  ] && precmd_functions+=(osc7_cmd)
+		PROMPT_COMMAND="prompt_cmd"
 		;;
 	esac
+
+	true
+
+And a similar script for zsh (I dont' know how to combine those two into one)
+
+.. code:: bash
+
+	# A zsh script that produces a prompt containing useful information
+	# Source it within your .zshrc file, or copy over the relevant parts
+
+	# Only works with zsh
+	[ -n $ZSH_VERSION ] || return 0
+
+	# Only run in interactive shell, test if 'i' is in $- (the startup options)
+	[[ $- == *i* ]] || return 0
+
+	# Enocde URL
+	encodeurl() {
+		LC_ALL=C
+		local str="$1"
+		local enc="" safe o
+		
+		while [ -n "$str" ]; do
+			safe="${str%%[!a-zA-Z0-9/:_\.\-\!\'\(\)~]*}"
+			enc+=$safe
+			str="${str#"$safe"}"
+			if [ -n "$str" ]; then
+				printf -v o "%%%02X" "'$str"
+				enc+=$o
+				str="${str#?}"
+			fi
+		done
+		
+		echo "${enc}"
+	}
+
+	precmd() { echo -n "\[\e]7;file://${HOSTNAME:-${HOST}}$(encodeurl $(pwd))\a\]" }
 
 	true
 

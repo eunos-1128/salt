@@ -56,7 +56,7 @@
 #include <chrono>
 #include <cmath>
 #include <map>
-#include <source_location>
+#include <regex>
 
 // --------------------------------------------------------------------
 
@@ -5294,6 +5294,10 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 				break;
 
 			case 1337:
+			{
+				static const std::regex kRemoteHostRX(R"(^RemoteHost=(.+?)@(.+)$)");
+				std::smatch m;
+
 				if (mArgString.starts_with("CurrentDir="))
 					mTerminalCWD = mArgString.substr(strlen("CurrentDir="));
 				else if (mArgString == "StealFocus")
@@ -5302,7 +5306,12 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 					mBlockCursor = true;
 				else if (mArgString == "CursorShape=1" or mArgString == "CursorShape=2")
 					mBlockCursor = false;
+				else if (std::regex_match(mArgString, m, kRemoteHostRX))
+				{
+					mTerminalHost = m[2];
+				}
 				break;
+			}
 
 			default:
 				// PRINT(("Ignored %d OSC option", mArgs[0]));
