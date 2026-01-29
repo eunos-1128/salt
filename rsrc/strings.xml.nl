@@ -13,6 +13,10 @@
 		<value>Verbreek verbinding</value>
 	</localstring>
 	<localstring>
+		<key>Trying to connect</key>
+		<value>Verbinden...</value>
+	</localstring>
+	<localstring>
 		<key>Connection closed</key>
 		<value>Niet verbonden</value>
 	</localstring>
