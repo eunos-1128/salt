@@ -93,6 +93,7 @@ MPreferencesDialog::MPreferencesDialog()
 	SetText("terminal-type", MPrefs::GetString("terminal-type", "xterm"));
 	SetChecked("ignore-color", MPrefs::GetBoolean("ignore-color", false));
 	SetChecked("show-status-bar", MPrefs::GetBoolean("show-status-bar", true));
+	SetChecked("show-menu-bar", MPrefs::GetBoolean("show-menu-bar", true));
 
 	// connection page
 #if defined _MSC_VER
@@ -205,6 +206,7 @@ void MPreferencesDialog::Apply()
 	MPrefs::SetString("terminal-type", GetText("terminal-type"));
 	MPrefs::SetBoolean("ignore-color", IsChecked("ignore-color"));
 	MPrefs::SetBoolean("show-status-bar", IsChecked("show-status-bar"));
+	MPrefs::SetBoolean("show-menu-bar", IsChecked("show-menu-bar"));
 
 	//
 #if defined _MSC_VER

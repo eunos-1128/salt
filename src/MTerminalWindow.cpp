@@ -45,6 +45,7 @@
 
 #include "MSalt.hpp"
 
+#include <memory>
 #include <zeep/crypto.hpp>
 
 #include <source_location>
@@ -339,6 +340,9 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	, cNextTerminal(this, "select-next-window", &MTerminalWindow::OnNextTerminal, kTabKeyCode, kControlKey)
 	, cPrevTerminal(this, "select-previous-window", &MTerminalWindow::OnPrevTerminal, kTabKeyCode, kControlKey | kShiftKey)
 
+	, cShowMenubar(this, "show-menubar", &MTerminalWindow::OnShowMenubar)
+	, cShowStatusbar(this, "show-statusbar", &MTerminalWindow::OnShowStatusbar)
+
 	, mChannel(inTerminalChannel)
 	, mNext(nullptr)
 	, mNr(sNextNr++)
@@ -397,7 +401,7 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	MTerminalView::GetTerminalMetrics(80, 24, false, w, h);
 	bounds = MRect(0, 0, w, h);
 
-	mTerminalView.reset(new MTerminalView("terminalview", bounds, mStatusbar, mScrollbar, mSearchPanel, inTerminalChannel, inArgv));
+	mTerminalView = std::make_shared<MTerminalView>("terminalview", bounds, mStatusbar, mScrollbar, mSearchPanel, inTerminalChannel, inArgv);
 	mTerminalView->SetLayout({ true, 0 });
 
 	hbox->AddChild(mTerminalView.get(), mScrollbar);
@@ -408,6 +412,8 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 
 	if (MPrefs::GetBoolean("show-status-bar", true) == false)
 		mStatusbar->Hide();
+
+	ShowHideMenubar(MPrefs::GetBoolean("show-menu-bar", true));
 
 	// add to bottom of the list
 	if (sFirst == nullptr)
@@ -513,6 +519,19 @@ void MTerminalWindow::OnPrevTerminal()
 		if (w != nullptr and w != this)
 			w->Select();
 	}
+}
+
+void MTerminalWindow::OnShowMenubar(bool inShow)
+{
+	ShowHideMenubar(inShow);
+}
+
+void MTerminalWindow::OnShowStatusbar(bool inShow)
+{
+	if (inShow)
+		mStatusbar->Show();
+	else
+	 	mStatusbar->Hide();
 }
 
 void MTerminalWindow::ShowSearchPanel()

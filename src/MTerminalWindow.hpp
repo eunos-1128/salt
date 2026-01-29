@@ -85,12 +85,16 @@ class MTerminalWindow : public MWindow
 	void OnFind();
 	void OnNextTerminal();
 	void OnPrevTerminal();
+	void OnShowMenubar(bool inChecked);
+	void OnShowStatusbar(bool inChecked);
 
 	MCommand<void()> cClose;
 	MCommand<void()> cCloneTerminal;
 	MCommand<void()> cFind;
 	MCommand<void()> cNextTerminal;
 	MCommand<void()> cPrevTerminal;
+	MCommand<void(bool)> cShowMenubar;
+	MCommand<void(bool)> cShowStatusbar;
 
 	MTerminalChannel *mChannel;
 	MBoxControl *mMainVBox;

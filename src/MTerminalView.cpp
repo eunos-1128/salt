@@ -282,8 +282,6 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	, cFindNext(this, "find-next", &MTerminalView::OnFindNext, kF3KeyCode, kControlKey)
 	, cFindPrev(this, "find-previous", &MTerminalView::OnFindPrev, kF3KeyCode, kControlKey | kShiftKey)
 
-	, cShowMenubar(this, "show-menubar", &MTerminalView::OnShowMenubar)
-
 	, mPFK(nullptr)
 	, mNewPFK(nullptr)
 	, mEscState(eESC_NONE)
@@ -377,8 +375,6 @@ void MTerminalView::AddedToWindow()
 	cFindNext.Register();
 	cFindPrev.Register();
 
-	cShowMenubar.Register();
-
 	cCopy.SetEnabled(false);
 	cEnterTOTP.SetState(-1);
 
@@ -396,11 +392,6 @@ MTerminalView *MTerminalView::GetFrontTerminal()
 	if (not sTerminalList.empty())
 		return sTerminalList.front();
 	return result;
-}
-
-void MTerminalView::OnShowMenubar(bool inShow)
-{
-	std::cout << "Show menubar: " <<std::boolalpha << inShow << '\n';
 }
 
 void MTerminalView::Open()
@@ -518,6 +509,7 @@ void MTerminalView::PreferencesChanged()
 		else
 			mStatusbar->Hide();
 	}
+	GetWindow()->ShowHideMenubar(MPrefs::GetBoolean("show-menu-bar", true));
 
 	Invalidate();
 }

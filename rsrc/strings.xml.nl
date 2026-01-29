@@ -686,7 +686,12 @@
 		<key>One Time Passwords</key>
 		<value>Tijdelijk wachtwoord</value>
 	</localstring>
-	
+
+	<localstring context="menu">
+		<key>Show menubar</key>
+		<value>Toon menubalk</value>
+	</localstring>
+
 	<localstring>
 		<key>Save File</key>
 		<value>Bewaar bestand</value>

@@ -16,4 +16,5 @@
 	<separator />
 
 	<item label="Show menubar" cmd='win.show-menubar' />
+	<item label="Show statusbar" cmd='win.show-statusbar' />
 </menu>

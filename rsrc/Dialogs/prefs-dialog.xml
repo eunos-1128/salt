@@ -45,7 +45,8 @@
 					<checkbox margin-top="10" bind="top left" id="block-cursor" title="Block Cursor" />
 					<checkbox bind="top left" id="blink-cursor" title="Blinking Cursor" />
 					<checkbox bind="top left" id="ignore-color" title="Ignore colors (monochrome mode)" />
-					<checkbox bind="top left" id="show-status-bar" title="Show Statusbar" />
+					<checkbox bind="top left" id="show-menu-bar" title="Show menubar" />
+					<checkbox bind="top left" id="show-status-bar" title="Show statusbar" />
 				</page>
 				<page id="page2">
 					<hbox>
