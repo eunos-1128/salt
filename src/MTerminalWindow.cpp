@@ -411,9 +411,16 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	mSearchPanel->Hide();
 
 	if (MPrefs::GetBoolean("show-status-bar", true) == false)
+	{
 		mStatusbar->Hide();
+		cShowStatusbar.SetChecked(false);
+	}
 
-	ShowHideMenubar(MPrefs::GetBoolean("show-menu-bar", true));
+	if (MPrefs::GetBoolean("show-menu-bar", true) == false)
+	{
+		ShowHideMenubar(false);
+		cShowMenubar.SetChecked(false);
+	}
 
 	// add to bottom of the list
 	if (sFirst == nullptr)

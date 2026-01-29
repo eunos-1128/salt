@@ -49,6 +49,7 @@
 #include "MVT220CharSets.hpp"
 #include "MWindow.hpp"
 
+#include <MTypes.hpp>
 #include <ios>
 #include <pinch/debug.hpp>
 #include <zeep/crypto.hpp>
@@ -1051,7 +1052,7 @@ bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t /*inDeltaX*/, int32
 	return true;
 }
 
-void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
+void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
 	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		SendMouseCommand(2, true, inX, inY, 0);
@@ -1062,12 +1063,19 @@ void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
 	}
 }
 
-void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY)
+void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
 	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		SendMouseCommand(1, true, inX, inY, 0);
 	else
-		ShowContextMenu(inX, inY);
+	{
+		bool controlClick = inModifiers & kControlKey;
+		bool controlRightClickIsContextMenu = MPrefs::GetBoolean("cntrl-right-click", false);
+		if (controlClick == controlRightClickIsContextMenu)
+			ShowContextMenu(inX, inY);
+		else
+			MiddleMouseButtonClick(inX, inY, inModifiers);
+	}
 }
 
 void MTerminalView::Draw()

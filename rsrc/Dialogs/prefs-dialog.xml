@@ -47,6 +47,7 @@
 					<checkbox bind="top left" id="ignore-color" title="Ignore colors (monochrome mode)" />
 					<checkbox bind="top left" id="show-menu-bar" title="Show menubar" />
 					<checkbox bind="top left" id="show-status-bar" title="Show statusbar" />
+					<checkbox bind="top left" id="cntrl-right-click" title="Control+Right click for context menu" />
 				</page>
 				<page id="page2">
 					<hbox>

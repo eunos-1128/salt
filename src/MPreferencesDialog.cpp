@@ -94,6 +94,7 @@ MPreferencesDialog::MPreferencesDialog()
 	SetChecked("ignore-color", MPrefs::GetBoolean("ignore-color", false));
 	SetChecked("show-status-bar", MPrefs::GetBoolean("show-status-bar", true));
 	SetChecked("show-menu-bar", MPrefs::GetBoolean("show-menu-bar", true));
+	SetChecked("cntrl-right-click", MPrefs::GetBoolean("cntrl-right-click", false));
 
 	// connection page
 #if defined _MSC_VER
@@ -207,6 +208,7 @@ void MPreferencesDialog::Apply()
 	MPrefs::SetBoolean("ignore-color", IsChecked("ignore-color"));
 	MPrefs::SetBoolean("show-status-bar", IsChecked("show-status-bar"));
 	MPrefs::SetBoolean("show-menu-bar", IsChecked("show-menu-bar"));
+	MPrefs::SetBoolean("cntrl-right-click", IsChecked("cntrl-right-click"));
 
 	//
 #if defined _MSC_VER
