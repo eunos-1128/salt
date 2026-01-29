@@ -43,7 +43,7 @@ extern const char kAppName[], kVersionString[];
 class MSaltApp : public MApplication
 {
   public:
-	MSaltApp(MApplicationImpl *inImpl);
+	explicit MSaltApp(MApplicationImpl *inImpl);
 
 	~MSaltApp();
 
@@ -81,7 +81,7 @@ class MSaltApp : public MApplication
 	template <typename Handler>
 	void execute(Handler &&h)
 	{
-		mImpl->execute(std::move(h));
+		mImpl->execute(std::forward<Handler>(h));
 	}
 
 	void UpdateWindowMenu();
@@ -148,13 +148,13 @@ class MAppExecutor
 		return !(*this == other);
 	}
 
-	asio_ns::execution_context &query(asio_ns::execution::context_t) const noexcept
+	[[nodiscard]] asio_ns::execution_context &query(asio_ns::execution::context_t /*unused*/) const noexcept
 	{
 		return *m_context;
 	}
 
 	static constexpr asio_ns::execution::blocking_t::never_t query(
-		asio_ns::execution::blocking_t) noexcept
+		asio_ns::execution::blocking_t /*unused*/) noexcept
 	{
 		// This executor always has blocking.never semantics.
 		return asio_ns::execution::blocking.never;

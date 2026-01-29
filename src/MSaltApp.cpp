@@ -387,7 +387,7 @@ void MSaltApp::Open(const ConnectInfo &inRecent, const std::string &inCommand)
 bool MSaltApp::AllowQuit(bool inLogOff)
 {
 	if (mConnectionPool.has_open_channels() == false and
-		MTerminalWindow::IsAnyTerminalOpen() == false)
+		MTerminalWindow::IsAnyTerminalActive() == false)
 		return true;
 
 	DisplayAlert(nullptr, "close-all-sessions-alert",

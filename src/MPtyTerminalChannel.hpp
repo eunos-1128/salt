@@ -39,9 +39,9 @@
 class MPtyTerminalChannel : public MTerminalChannel
 {
   public:
-	MPtyTerminalChannel(const std::filesystem::path &inCwd);
-	MPtyTerminalChannel(MTerminalChannel *inCloneFrom);
-	~MPtyTerminalChannel();
+	explicit MPtyTerminalChannel(const std::filesystem::path &inCwd);
+	explicit MPtyTerminalChannel(MTerminalChannel *inCloneFrom);
+	~MPtyTerminalChannel() override;
 
 	void SetTerminalSize(uint32_t inColumns, uint32_t inRows,
 		uint32_t inPixelWidth, uint32_t inPixelHeight) override;
@@ -53,13 +53,14 @@ class MPtyTerminalChannel : public MTerminalChannel
 
 	void Close() override;
 
-	bool IsOpen() const override;
+	[[nodiscard]] bool IsOpen() const override;
+	[[nodiscard]] bool AllowClose() const override;
 
 	void SendData(std::string &&inData) override;
 	void SendSignal(const std::string &inSignal) override;
 	void ReadData(const ReadCallback &inCallback) override;
 
-	std::filesystem::path GetCWD() const;
+	[[nodiscard]] std::filesystem::path GetCWD() const;
 	void SetCWD(const std::filesystem::path &inCWD)
 	{
 		mCWD = inCWD;
@@ -83,7 +84,7 @@ class MPtyTerminalChannel : public MTerminalChannel
 		int name() { return TIOCSWINSZ; }
 		void *data() { return &ws; }
 
-		struct winsize ws;
+		struct winsize ws{};
 	};
 
 	int mPid;

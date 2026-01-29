@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 //	eDECBI =		'****', 	// Back index
 //	eDECFI =		'****', 	// Forward index
 //	eLS1R =			'****', 	// Locking shift 1 right

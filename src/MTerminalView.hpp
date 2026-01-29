@@ -93,6 +93,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void Opened();
 	void Closed();
 
+	bool AllowClose() const { return mTerminalChannel == nullptr or mTerminalChannel->AllowClose(); }
+
 	void SendCommand(std::string inData);
 
 	void SendMouseCommand(int32_t inButton, bool inPressed, int32_t inX, int32_t inY, uint32_t inModifiers);

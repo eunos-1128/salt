@@ -40,7 +40,7 @@ struct ConnectInfoBase
 	std::string user;
 	uint16_t port = 22;
 
-	std::string HostAndPortString() const
+	[[nodiscard]] std::string HostAndPortString() const
 	{
 		return port == 22 ? host : host + ':' + std::to_string(port);
 	}
@@ -70,12 +70,12 @@ struct ConnectInfo : public ConnectInfoBase
 
 	auto operator<=>(const ConnectInfo &) const noexcept = default;
 
-	std::string str() const
+	[[nodiscard]] std::string str() const
 	{
 		return (std::ostringstream() << *this).str();
 	}
 
-	std::string DisplayString() const;
+	[[nodiscard]] std::string DisplayString() const;
 	static ConnectInfo parse(const std::string &s);
 
 	friend std::ostream &operator<<(std::ostream &os, const ConnectInfo &c);

@@ -1258,33 +1258,33 @@ void MTerminalView::Draw()
 		MRect caretRect; // initially empty
 		MColor caretColor;
 
+		// calculate selected region
+		int32_t sc1 = 1, sc2 = 0;
+		if (lineNr >= selLine1 and lineNr <= selLine2)
+		{
+			if (blockSelection)
+			{
+				sc1 = selCol1;
+				sc2 = selCol2;
+				if (sc1 > sc2)
+					std::swap(sc1, sc2);
+			}
+			else
+			{
+				if (lineNr == selLine1)
+					sc1 = selCol1;
+				else
+					sc1 = 0;
+				if (lineNr == selLine2)
+					sc2 = selCol2;
+				else
+					sc2 = mTerminalWidth;
+			}
+		}
+
 		auto iter = back_inserter(text);
 		for (int32_t c = 0; c < n; ++c)
 		{
-			// calculate selected region
-			int32_t sc1 = 1, sc2 = 0;
-			if (lineNr >= selLine1 and lineNr <= selLine2)
-			{
-				if (blockSelection)
-				{
-					sc1 = selCol1;
-					sc2 = selCol2;
-					if (sc1 > sc2)
-						std::swap(sc1, sc2);
-				}
-				else
-				{
-					if (lineNr == selLine1)
-						sc1 = selCol1;
-					else
-						sc1 = 0;
-					if (lineNr == selLine2)
-						sc2 = selCol2;
-					else
-						sc2 = mTerminalWidth;
-				}
-			}
-
 			auto [uc, st, fgc, bgc, linkNr, tab] = line[c];
 
 			if (uc == 0 or st & kStyleInvisible)
@@ -1295,24 +1295,24 @@ void MTerminalView::Draw()
 
 			if (not mIgnoreColors)
 			{
-				if (auto clr = line[c].GetForeColor())
-					textC = *clr;
+				if (fgc)
+					textC = *fgc;
 
-				if (auto clr = line[c].GetBackColor())
-					backC = *clr;
+				if (bgc)
+					backC = *bgc;
 			}
 
-			if (((st & kStyleInverse) xor mDECSCNM) or
+			if (((st & kStyleInverse) != mDECSCNM) or
 				(lineNr == mTerminalHeight and (st & kStyleInverse) == 0))
 			{
 				std::swap(textC, backC);
 			}
 
 			if (c >= sc1 and c < sc2) // 'selected!'
+			{
 				backC = selectionColor;
-
-			if (not fgc and not bgc and textC == mTerminalColors[eText])
 				textC = textC.Distinct(backC);
+			}
 
 			if (st & kStyleBlink and mBlinkOn)
 				textC = backC;
@@ -5349,6 +5349,10 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 				break;
 
 			case 1337:
+			{
+				static const std::regex kRemoteHostRX(R"(^RemoteHost=(.+?)@(.+)$)");
+				std::smatch m;
+
 				if (mArgString.starts_with("CurrentDir="))
 					mTerminalCWD = mArgString.substr(strlen("CurrentDir="));
 				else if (mArgString == "StealFocus")
@@ -5357,7 +5361,12 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 					mBlockCursor = true;
 				else if (mArgString == "CursorShape=1" or mArgString == "CursorShape=2")
 					mBlockCursor = false;
+				else if (std::regex_match(mArgString, m, kRemoteHostRX))
+				{
+					mTerminalHost = m[2];
+				}
 				break;
+			}
 
 			default:
 				// PRINT(("Ignored %d OSC option", mArgs[0]));
@@ -5568,8 +5577,8 @@ void MTerminalView::Beep()
 			; // PRINT(("duh"));
 
 		MStoryboard *storyboard = mAnimationManager->CreateStoryboard();
-		storyboard->AddTransition(mGraphicalBeep, 0.75, 75ms, "acceleration-decelleration");
-		storyboard->AddTransition(mGraphicalBeep, 0.00, 75ms, "acceleration-decelleration");
+		storyboard->AddTransition(mGraphicalBeep, 0.75, 100ms, "acceleration-decelleration");
+		storyboard->AddTransition(mGraphicalBeep, 0.00, 100ms, "acceleration-decelleration");
 		mAnimationManager->Schedule(storyboard);
 
 		beeped = true;

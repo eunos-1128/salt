@@ -6,8 +6,7 @@ Comment[nl]=Alternatieve opdracht prompt en SSH terminal
 TryExec=salt
 Exec=env GDK_BACKEND=x11 @__EXE__@ %u
 Icon=@__ICON__@
-Type=Application
-Categories=GNOME;GTK;Utility;TerminalEmulator;
+Categories=GNOME;GTK;System;TerminalEmulator
 Keywords=ssh;shell;prompt;command;commandline;cmd;
 MimeType=x-scheme-handler/ssh
 Actions=new-terminal;connect
