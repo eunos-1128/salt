@@ -51,6 +51,7 @@
 
 #include <pinch/debug.hpp>
 #include <zeep/crypto.hpp>
+#include <zeep/unicode-support.hpp>
 #include <zeep/uri.hpp>
 
 #include <chrono>
@@ -553,7 +554,7 @@ void MTerminalView::PreviewColors(MColor inBackColor, MColor inSectionColor)
 	Invalidate();
 }
 
-void MTerminalView::StatusPartClicked(uint32_t  /*inPart*/, MRect /* inRect */)
+void MTerminalView::StatusPartClicked(uint32_t /*inPart*/, MRect /* inRect */)
 {
 	auto info = mTerminalChannel->GetConnectionInfo();
 
@@ -645,7 +646,7 @@ void MTerminalView::Reset()
 	if (needResize and GetWindow() != nullptr)
 		ResizeTerminal(mTerminalWidth, mTerminalHeight, true);
 
-	mMouseMode = eTrackMouseNone;
+	mMouseTracking = 0;
 }
 
 void MTerminalView::SoftReset()
@@ -794,7 +795,7 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 
 	if (not mBuffer->IsSelectionEmpty())
 	{
-		if (inModifiers & kShiftKey and mMouseMode == eTrackMouseNone)
+		if (inModifiers & kShiftKey and not GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		{
 			mMouseClick = eSingleClick;
 
@@ -822,7 +823,7 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 			Invalidate();
 		}
 	}
-	else if (inModifiers & kControlKey and mMouseMode == eTrackMouseNone)
+	else if (inModifiers & kControlKey and not GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 	{
 		int hoveredLink = mBuffer->GetHoveredLink(line, column);
 		if (hoveredLink != 0)
@@ -834,9 +835,9 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 		}
 	}
 
-	if (mMouseMode != eTrackMouseNone and inClickCount == 1)
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent) and inClickCount == 1)
 	{
-		SendMouseCommand(0, inX, inY, inModifiers);
+		SendMouseCommand(0, true, inX, inY, inModifiers);
 		mMouseClick = eTrackClick;
 		done = true;
 	}
@@ -898,10 +899,10 @@ void MTerminalView::PointerMotion(int32_t inX, int32_t inY, uint32_t inModifiers
 {
 	using namespace std::chrono_literals;
 
-	if (mMouseClick == eTrackClick)
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::AnyEvent) or
+		(mMouseClick == eTrackClick and GetMouseTrackingFlag(MouseTrackingModeFlag::ButtonEvent)))
 	{
-		if (mMouseMode >= eTrackMouseCellMotionTracking)
-			SendMouseCommand(32, inX, inY, inModifiers);
+		SendMouseCommand(32, mMouseClick == eTrackClick, inX, inY, inModifiers);
 		return;
 	}
 
@@ -1009,8 +1010,8 @@ void MTerminalView::PointerLeave()
 
 void MTerminalView::ClickReleased(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
-	if (mMouseMode >= eTrackMouseSendXYOnButton)
-		SendMouseCommand(3, inX, inY, inModifiers);
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+		SendMouseCommand(0, false, inX, inY, inModifiers);
 	else if (mMouseClick == eLinkClick)
 	{
 		if (mCurrentLink != 0)
@@ -1031,15 +1032,15 @@ void MTerminalView::ClickReleased(int32_t inX, int32_t inY, uint32_t inModifiers
 	mAnchorLink = 0;
 }
 
-bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t  /*inDeltaX*/, int32_t inDeltaY, uint32_t inModifiers)
+bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t /*inDeltaX*/, int32_t inDeltaY, uint32_t inModifiers)
 {
 	if (inDeltaY != 0)
 	{
-		if (mMouseMode == eTrackMouseNone)
+		if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+			SendMouseCommand(inDeltaY < 0 ? 64 : 65, true, inX, inY, inModifiers);
+		else
 			for (int i = 0; i < 2 * std::abs(inDeltaY); ++i)
 				Scroll(inDeltaY < 0 ? kScrollLineUp : kScrollLineDown);
-		else
-			SendMouseCommand(inDeltaY < 0 ? 64 : 65, inX, inY, inModifiers);
 	}
 
 	return true;
@@ -1047,12 +1048,17 @@ bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t  /*inDeltaX*/, int3
 
 void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
 {
-	SecondaryMouseButtonClick(inX, inY);
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+		SendMouseCommand(2, true, inX, inY, 0);
+	else
+		SecondaryMouseButtonClick(inX, inY);
 }
 
-void MTerminalView::SecondaryMouseButtonClick(int32_t  /*inX*/, int32_t  /*inY*/)
+void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY)
 {
-	if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+		SendMouseCommand(1, true, inX, inY, 0);
+	else if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
 	{
 		MClipboard::PrimaryInstance().GetData([this](const std::string &text)
 			{ DoPaste(text); });
@@ -1390,7 +1396,7 @@ void MTerminalView::Draw()
 	}
 }
 
-void MTerminalView::AdjustCursor(int32_t  /*inX*/, int32_t  /*inY*/, uint32_t  /*inModifiers*/)
+void MTerminalView::AdjustCursor(int32_t /*inX*/, int32_t /*inY*/, uint32_t /*inModifiers*/)
 {
 	SetCursor(eNormalCursor);
 }
@@ -2699,44 +2705,73 @@ void MTerminalView::SendCommand(std::string inData)
 	}
 }
 
-void MTerminalView::SendMouseCommand(int32_t inButton, int32_t inX, int32_t inY, uint32_t inModifiers)
+void MTerminalView::SendMouseCommand(int32_t inButton, bool inPressed, int32_t inX, int32_t inY, uint32_t inModifiers)
 {
 	int32_t line, column;
 	GetCharacterForPosition(inX, inY, line, column);
 
-	if (inButton == 32)
-	{
-		if (mMouseTrackX == column and mMouseTrackY == line)
-			return;
-	}
+	if (inButton == 32 and mMouseTrackX == column and mMouseTrackY == line)
+		return;
 
 	mMouseTrackX = column;
 	mMouseTrackY = line;
 
-	char cb = 32 + inButton;
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::ExtendedMode))
+	{
+		std::string cmd = kCSI + 'M';
 
-	if (inModifiers & kShiftKey)
-		cb |= 4;
-	if (inModifiers & kOptionKey)
-		cb |= 8;
-	if (inModifiers & kControlKey)
-		cb |= 16;
+		char32_t cb = (inPressed ? inButton : 3) | 32;
+		if (inModifiers & kShiftKey)
+			cb |= 4;
+		if (inModifiers & kOptionKey)
+			cb |= 8;
+		if (inModifiers & kControlKey)
+			cb |= 16;
 
-	const int32_t kMaxPosition = '~' - '!';
+		zeep::append(cmd, 32 + inButton);
+		zeep::append(cmd, '!' + column);
+		zeep::append(cmd, '!' + line);
 
-	if (line < 0)
-		line = 0;
-	if (line > kMaxPosition)
-		line = kMaxPosition;
-	if (column < 0)
-		column = 0;
-	if (column > kMaxPosition)
-		column = kMaxPosition;
+		SendCommand(cmd);
+	}
+	else if (GetMouseTrackingFlag(MouseTrackingModeFlag::SGRExtendedMode))
+	{
+		int cb = inButton & ~32;
+		if (inModifiers & kShiftKey)
+			cb |= 4;
+		if (inModifiers & kOptionKey)
+			cb |= 8;
+		if (inModifiers & kControlKey)
+			cb |= 16;
 
-	char cx = '!' + column;
-	char cy = '!' + line;
+		SendCommand(kCSI + std::format("<{};{};{}{}", cb, column + 1, line + 1, inPressed ? 'M' : 'm'));
+	}
+	else
+	{
+		const int32_t kMaxPosition = '~' - '!';
 
-	SendCommand(kCSI + 'M' + cb + cx + cy);
+		if (line < 0)
+			line = 0;
+		if (line > kMaxPosition)
+			line = kMaxPosition;
+		if (column < 0)
+			column = 0;
+		if (column > kMaxPosition)
+			column = kMaxPosition;
+
+		char cb = (inPressed ? inButton : 3) | 32;
+		char cx = '!' + column;
+		char cy = '!' + line;
+
+		if (inModifiers & kShiftKey)
+			cb |= 4;
+		if (inModifiers & kOptionKey)
+			cb |= 8;
+		if (inModifiers & kControlKey)
+			cb |= 16;
+
+		SendCommand(kCSI + 'M' + cb + cx + cy);
+	}
 }
 
 void MTerminalView::Opened()
@@ -2807,12 +2842,18 @@ void MTerminalView::ActivateSelf()
 {
 	MCanvas::ActivateSelf();
 	Invalidate();
+
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::FocusEvent))
+		SendCommand(kCSI + 'I');
 }
 
 void MTerminalView::DeactivateSelf()
 {
 	MCanvas::ActivateSelf();
 	Invalidate();
+
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::FocusEvent))
+		SendCommand(kCSI + 'O');
 }
 
 void MTerminalView::HandleOpened(const std::error_code &ec)
@@ -5616,19 +5657,47 @@ void MTerminalView::SetDECMode(uint32_t inMode, bool inSet)
 			break;
 
 		case 9:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::X10, inSet);
+			break;
+
 		case 1000:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::VT200, inSet);
+			break;
+
 		case 1001:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::VT200Highlight, inSet);
+			break;
+
 		case 1002:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::ButtonEvent, inSet);
+			break;
+
 		case 1003:
-			// PRINT(("%s mouse mode for %d", inSet ? "set" : "reset", inMode));
-			if (inSet)
-				mMouseMode = (MouseTrackingMode)inMode;
-			else
-				mMouseMode = eTrackMouseNone;
+			SetMouseTrackingFlag(MouseTrackingModeFlag::AnyEvent, inSet);
 			break;
 
 		case 1004:
-			// ignored for now, focus tracking?
+			SetMouseTrackingFlag(MouseTrackingModeFlag::FocusEvent, inSet);
+			break;
+
+		case 1007:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::AlternateScroll, inSet);
+			break;
+
+		case 1005:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::ExtendedMode, inSet);
+			break;
+
+		case 1006:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::SGRExtendedMode, inSet);
+			break;
+
+		case 1015:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::URXVTExtendedMode, inSet);
+			break;
+
+		case 1016:
+			SetMouseTrackingFlag(MouseTrackingModeFlag::PixelPositionMode, inSet);
 			break;
 
 		case 47: // alternate screen buffer support
@@ -5871,7 +5940,7 @@ bool MTerminalView::DragAcceptsFile()
 	return IsOpen() and mTerminalChannel->CanDownloadFiles();
 }
 
-void MTerminalView::DragEnter(int32_t  /*inX*/, int32_t inY)
+void MTerminalView::DragEnter(int32_t /*inX*/, int32_t inY)
 {
 	mDragWithin = true;
 	Invalidate();
@@ -5887,7 +5956,7 @@ void MTerminalView::DragLeave()
 	Invalidate();
 }
 
-bool MTerminalView::DragAcceptData(int32_t  /*inX*/, int32_t  /*inY*/, const std::string &inData)
+bool MTerminalView::DragAcceptData(int32_t /*inX*/, int32_t /*inY*/, const std::string &inData)
 {
 	bool result = false;
 	mDragWithin = false;
@@ -5900,7 +5969,7 @@ bool MTerminalView::DragAcceptData(int32_t  /*inX*/, int32_t  /*inY*/, const std
 	return result;
 }
 
-bool MTerminalView::DragAcceptFile(int32_t  /*inX*/, int32_t  /*inY*/, const std::filesystem::path &inFile)
+bool MTerminalView::DragAcceptFile(int32_t /*inX*/, int32_t /*inY*/, const std::filesystem::path &inFile)
 {
 	bool result = false;
 	mDragWithin = false;

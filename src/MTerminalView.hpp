@@ -30,8 +30,8 @@
 #pragma once
 
 #include "MCanvas.hpp"
-#include "MCommand.hpp"
 #include "MColor.hpp"
+#include "MCommand.hpp"
 #include "MP2PEvents.hpp"
 #include "MSearchPanel.hpp"
 #include "MTerminalBuffer.hpp"
@@ -94,14 +94,14 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void Closed();
 
 	void SendCommand(std::string inData);
-	
-	void SendMouseCommand(int32_t inButton, int32_t inX, int32_t inY, uint32_t inModifiers);
+
+	void SendMouseCommand(int32_t inButton, bool inPressed, int32_t inX, int32_t inY, uint32_t inModifiers);
 
 	void HandleOpened(const std::error_code &ec);
 	void HandleReceived(const std::error_code &ec, std::streambuf &inData);
 
 	bool KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t inModifiers, bool inAutoRepeat) override;
-	void EnterText(const std::string &inText/* , bool inRepeat */) override;
+	void EnterText(const std::string &inText /* , bool inRepeat */) override;
 
 	void HandleMessage(const std::string &inMessage, const std::string &inLanguage);
 
@@ -442,17 +442,39 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	MAnimationVariable *mDisabledFactor;
 	bool mIgnoreColors;
 
-	enum MouseTrackingMode
+	enum class MouseTrackingModeFlag
 	{
-		eTrackMouseNone,
-		eTrackMouseSendXYOnClick = 9,
-		eTrackMouseSendXYOnButton = 1000,
-		eTrackMouseHilightTracking = 1001,
-		eTrackMouseCellMotionTracking = 1002,
-		eTrackMouseAllMotionTracking = 1003
-	} mMouseMode;
+		X10 = (1 << 0),
+		VT200 = (1 << 1),
+		VT200Highlight = (1 << 2),
+		ButtonEvent = (1 << 3),
+		AnyEvent = (1 << 4),
+		FocusEvent = (1 << 5),
+		AlternateScroll = (1 << 6),
+		ExtendedMode = (1 << 7),
+		SGRExtendedMode = (1 << 8),
+		URXVTExtendedMode = (1 << 9),
+		PixelPositionMode = (1 << 10),
 
-	int32_t mMouseTrackX, mMouseTrackY;
+		SendAnyButtonEvent = (X10 | VT200 | ButtonEvent | AnyEvent)
+	};
+
+	int mMouseTracking = 0;
+
+	constexpr bool GetMouseTrackingFlag(MouseTrackingModeFlag flag) const
+	{
+		return (mMouseTracking & static_cast<int>(flag)) != 0;
+	}
+
+	void SetMouseTrackingFlag(MouseTrackingModeFlag flag, bool inSet)
+	{
+		if (inSet)
+			mMouseTracking |= static_cast<int>(flag);
+		else
+		 	mMouseTracking &= ~static_cast<int>(flag);
+	}
+
+	int32_t mMouseTrackX, mMouseTrackY, mMouseTrackBtn = 0;
 
 	std::string mSetWindowTitle;
 
