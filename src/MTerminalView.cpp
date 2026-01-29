@@ -56,6 +56,7 @@
 #include <chrono>
 #include <cmath>
 #include <map>
+#include <regex>
 #include <source_location>
 
 // --------------------------------------------------------------------
@@ -4155,34 +4156,34 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			break;
 
 		// SM_ANSI -- Set Mode ANSI
-		case eSM_ANSI:
+		case eANSISET:
 			for (uint32_t a : mArgs)
-				SetResetMode(a, true, true);
+				SetAnsiMode(a, true);
 			break;
 		// RM_ANSI -- Reset Mode ANSI
-		case eRM_ANSI:
+		case eANSIRESET:
 			for (uint32_t a : mArgs)
-				SetResetMode(a, true, false);
+				SetAnsiMode(a, false);
 			break;
 		// SM_DEC -- Set Mode DEC
-		case eSM_DEC:
+		case eDECSET:
 			for (uint32_t a : mArgs)
-				SetResetMode(a, false, true);
+				SetDECMode(a, true);
 			break;
 		// RM_DEC -- Reset Mode DEC
-		case eRM_DEC:
+		case eDECRESET:
 			for (uint32_t a : mArgs)
-				SetResetMode(a, false, false);
+				SetDECMode(a, false);
 			break;
 		// SAVEMODE -- Save DEC Private Mode Values
 		case eSAVEMODE:
 			for (int a : mArgs)
-				mSavedPrivateMode[a] = GetMode(a, false);
+				mSavedPrivateMode[a] = GetDECMode(a);
 			break;
 		// RESTMODE -- Restore DEC Private Mode Values
 		case eRESTMODE:
 			for (int a : mArgs)
-				SetResetMode(a, false, mSavedPrivateMode[a]);
+				SetDECMode(a, mSavedPrivateMode[a]);
 			break;
 		// DECREQTPARM -- no comment
 		case eDECREQTPARM:
@@ -4493,14 +4494,14 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 		case eDECRQMANSI:
 		{
 			int p = GetParam(0, 0);
-			SendCommand(MFormat("\033[%d;%d$y", p, GetMode(p, true) ? 1 : 2));
+			SendCommand(MFormat("\033[%d;%d$y", p, GetAnsiMode(p) ? 1 : 2));
 			break;
 		}
 		// DECRQMDEC -- Request mode DEC Private
 		case eDECRQMDEC:
 		{
 			int p = GetParam(0, 0);
-			SendCommand(MFormat("\033[?%d;%d$y", p, GetMode(p, false) ? 1 : 2));
+			SendCommand(MFormat("\033[?%d;%d$y", p, GetDECMode(p) ? 1 : 2));
 			break;
 		}
 		// DECRQPSR -- Request presentation state
@@ -5530,224 +5531,226 @@ void MTerminalView::Beep()
 		mLastBeep = now;
 }
 
-void MTerminalView::SetResetMode(uint32_t inMode, bool inANSI, bool inSet)
+void MTerminalView::SetAnsiMode(uint32_t inMode, bool inSet)
 {
-	if (inANSI)
+	switch (inMode)
 	{
-		switch (inMode)
-		{
-			case 2:
-				mKAM = inSet;
-				break;
-			case 4:
-				mIRM = inSet;
-				break;
-			case 12:
-				mSRM = inSet;
-				break;
-			case 20:
-				mLNM = inSet;
-				break;
-			default:
-				// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
-				break;
-		}
-	}
-	else
-	{
-		switch (inMode)
-		{
-			case 1:
-				mDECCKM = inSet;
-				break;
-			case 2:
-				mDECANM = inSet;
-				break;
-			case 3:           // DECCOLM
-				mDECSSDT = 0; // reset status line conforming to specification
-				ResizeTerminal(inSet ? 132 : 80, mTerminalHeight, true);
-				break;
-			case 4:
-				mDECSCLM = inSet;
-				break;
-			case 5:
-				mDECSCNM = inSet;
-				break;
-			case 6:
-				mCursor.DECOM = inSet;
-				if (inSet)
-					MoveCursorTo(0, 0);
-				break;
-			case 7:
-				mCursor.DECAWM = inSet;
-				break;
-			case 8:
-				mDECARM = inSet;
-				break;
-			case 12:
-				mCursor.blink = inSet;
-				break;
-			case 18:
-				mDECPFF = inSet;
-				break;
-			case 19:
-				mDECPEX = inSet;
-				break;
-			case 25:
-				mDECTCEM = inSet;
-				break;
-			case 42:
-				mDECNRCM = inSet;
-				break;
-			case 66:
-				mDECNMK = inSet;
-				break;
-			case 67:
-				mDECBKM = inSet;
-				break;
-
-			case 69:
-				mDECVSSM = inSet;
-				if (not mDECVSSM)
-				{
-					mMarginLeft = 0;
-					mMarginRight = mTerminalWidth - 1;
-				}
-				break;
-
-			case 9:
-			case 1000:
-			case 1001:
-			case 1002:
-			case 1003:
-				// PRINT(("%s mouse mode for %d", inSet ? "set" : "reset", inMode));
-				if (inSet)
-					mMouseMode = (MouseTrackingMode)inMode;
-				else
-					mMouseMode = eTrackMouseNone;
-				break;
-
-			case 1004:
-				// ignored for now, focus tracking?
-				break;
-
-			case 47: // alternate screen buffer support
-			case 1047:
-				if (inSet)
-					SwitchToAlternateScreen();
-				else
-					SwitchToRegularScreen();
-				break;
-
-			case 1048:
-				if (inSet)
-					SaveCursor();
-				else
-					RestoreCursor();
-				break;
-
-			case 1049:
-				if (inSet)
-				{
-					SaveCursor();
-					SwitchToAlternateScreen();
-				}
-				else
-				{
-					SwitchToRegularScreen();
-					RestoreCursor();
-				}
-				break;
-
-			case 2004:
-				mBracketedPaste = inSet;
-				break;
-
-			default:
-				// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
-				break;
-		}
+		case 2:
+			mKAM = inSet;
+			break;
+		case 4:
+			mIRM = inSet;
+			break;
+		case 12:
+			mSRM = inSet;
+			break;
+		case 20:
+			mLNM = inSet;
+			break;
+		default:
+			// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
+			break;
 	}
 }
 
-bool MTerminalView::GetMode(uint32_t inMode, bool inANSI)
+void MTerminalView::SetDECMode(uint32_t inMode, bool inSet)
+{
+	switch (inMode)
+	{
+		case 1:
+			mDECCKM = inSet;
+			break;
+		case 2:
+			mDECANM = inSet;
+			break;
+		case 3:           // DECCOLM
+			mDECSSDT = 0; // reset status line conforming to specification
+			ResizeTerminal(inSet ? 132 : 80, mTerminalHeight, true);
+			break;
+		case 4:
+			mDECSCLM = inSet;
+			break;
+		case 5:
+			mDECSCNM = inSet;
+			break;
+		case 6:
+			mCursor.DECOM = inSet;
+			if (inSet)
+				MoveCursorTo(0, 0);
+			break;
+		case 7:
+			mCursor.DECAWM = inSet;
+			break;
+		case 8:
+			mDECARM = inSet;
+			break;
+		case 12:
+			mCursor.blink = inSet;
+			break;
+		case 18:
+			mDECPFF = inSet;
+			break;
+		case 19:
+			mDECPEX = inSet;
+			break;
+		case 25:
+			mDECTCEM = inSet;
+			break;
+		case 42:
+			mDECNRCM = inSet;
+			break;
+		case 66:
+			mDECNMK = inSet;
+			break;
+		case 67:
+			mDECBKM = inSet;
+			break;
+
+		case 69:
+			mDECVSSM = inSet;
+			if (not mDECVSSM)
+			{
+				mMarginLeft = 0;
+				mMarginRight = mTerminalWidth - 1;
+			}
+			break;
+
+		case 9:
+		case 1000:
+		case 1001:
+		case 1002:
+		case 1003:
+			// PRINT(("%s mouse mode for %d", inSet ? "set" : "reset", inMode));
+			if (inSet)
+				mMouseMode = (MouseTrackingMode)inMode;
+			else
+				mMouseMode = eTrackMouseNone;
+			break;
+
+		case 1004:
+			// ignored for now, focus tracking?
+			break;
+
+		case 47: // alternate screen buffer support
+		case 1047:
+			if (inSet)
+				SwitchToAlternateScreen();
+			else
+				SwitchToRegularScreen();
+			break;
+
+		case 1048:
+			if (inSet)
+				SaveCursor();
+			else
+				RestoreCursor();
+			break;
+
+		case 1049:
+			if (inSet)
+			{
+				SaveCursor();
+				SwitchToAlternateScreen();
+			}
+			else
+			{
+				SwitchToRegularScreen();
+				RestoreCursor();
+			}
+			break;
+
+		case 2004:
+			mBracketedPaste = inSet;
+			break;
+
+		default:
+#ifndef NDEBUG
+			std::cout << std::format("Ignored {} of option {}\n", inSet ? "set" : "reset", inMode) << std::flush;
+#endif
+			break;
+	}
+}
+
+bool MTerminalView::GetAnsiMode(uint32_t inMode)
 {
 	bool result = false;
 
-	if (inANSI)
+	switch (inMode)
 	{
-		switch (inMode)
-		{
-			case 2:
-				result = mKAM;
-				break;
-			case 4:
-				result = mIRM;
-				break;
-			case 12:
-				result = mSRM;
-				break;
-			case 20:
-				result = mLNM;
-				break;
-		}
+		case 2:
+			result = mKAM;
+			break;
+		case 4:
+			result = mIRM;
+			break;
+		case 12:
+			result = mSRM;
+			break;
+		case 20:
+			result = mLNM;
+			break;
 	}
-	else
+
+	return result;
+}
+
+bool MTerminalView::GetDECMode(uint32_t inMode)
+{
+	bool result = false;
+
+	switch (inMode)
 	{
-		switch (inMode)
-		{
-			case 1:
-				result = mDECCKM;
-				break;
-			case 2:
-				result = mDECANM;
-				break;
-			case 3:
-				result = mTerminalWidth == 132;
-				break;
-			case 4:
-				result = mDECSCLM;
-				break;
-			case 5:
-				result = mDECSCNM;
-				break;
-			case 6:
-				result = mCursor.DECOM;
-				break;
-			case 7:
-				result = mCursor.DECAWM;
-				break;
-			case 8:
-				result = mDECARM;
-				break;
-			case 12:
-				result = mCursor.blink;
-				break;
-			case 18:
-				result = mDECPFF;
-				break;
-			case 19:
-				result = mDECPEX;
-				break;
-			case 25:
-				result = mDECTCEM;
-				break;
-			case 42:
-				result = mDECNRCM;
-				break;
-			case 66:
-				result = mDECNMK;
-				break;
-			case 67:
-				result = mDECBKM;
-				break;
-			case 69:
-				result = mDECVSSM;
-				break;
-			case 2004:
-				result = mBracketedPaste;
-				break;
-		}
+		case 1:
+			result = mDECCKM;
+			break;
+		case 2:
+			result = mDECANM;
+			break;
+		case 3:
+			result = mTerminalWidth == 132;
+			break;
+		case 4:
+			result = mDECSCLM;
+			break;
+		case 5:
+			result = mDECSCNM;
+			break;
+		case 6:
+			result = mCursor.DECOM;
+			break;
+		case 7:
+			result = mCursor.DECAWM;
+			break;
+		case 8:
+			result = mDECARM;
+			break;
+		case 12:
+			result = mCursor.blink;
+			break;
+		case 18:
+			result = mDECPFF;
+			break;
+		case 19:
+			result = mDECPEX;
+			break;
+		case 25:
+			result = mDECTCEM;
+			break;
+		case 42:
+			result = mDECNRCM;
+			break;
+		case 66:
+			result = mDECNMK;
+			break;
+		case 67:
+			result = mDECBKM;
+			break;
+		case 69:
+			result = mDECVSSM;
+			break;
+		case 2004:
+			result = mBracketedPaste;
+			break;
 	}
 
 	return result;

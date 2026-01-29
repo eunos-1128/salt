@@ -96,26 +96,25 @@ enum MCSICmd : uint32_t
 	ePPR = ' Q',      // Page Position Relative
 	eREP = 'b',       // Repeat preceding character
 	eSAVEMODE = '?s', // Save DEC Private Mode Values
-	eRM_ANSI = 'l',   // Reset Mode ANSI
-	eRM_DEC = '?l',   // Reset Mode DEC
 	eRESTMODE = '?r', // Restore DEC Private Mode Values
 	eSCORC = 'u',     // Restore Saved Cursor Position (SCO Console)
-					  //	eSCOSC =		's',		// Save Current Cursor Position (SCO Console)
+	                  //	eSCOSC =		's',		// Save Current Cursor Position (SCO Console)
 	eDECSLRM = 's',   // Set left and right margins
 	eSD = 'T',        // Pan Up
 	eSGR = 'm',       // Select Graphic Rendition
 	eSL = ' @',       // Shift Left
-	eSM_ANSI = 'h',   // Set Mode ANSI
-	eSM_DEC = '?h',   // Set Mode DEC
 	eSR = ' A',       // Shift Right
 	eSU = 'S',        // Pan Down
 	eTBC = 'g',       // Clear Tabs
 	eVPA = 'd',       // Vertical Line Position Absolute
 	eVPR = 'e',       // Vertical Position Relative
 
-	eXTERMDMK = '>n', // Set XTerm modify keys
-	eXTERMEMK = '>m', // Reset XTerm modify keys
-	eXTERMDMKR = '?m',// Get XTerm modify keys state
+	eXTERMDMK = '>n',  // Set XTerm modify keys
+	eXTERMEMK = '>m',  // Reset XTerm modify keys
+	eXTERMDMKR = '?m', // Get XTerm modify keys state
+
+	eANSISET = 'h',   // Set Mode ANSI
+	eANSIRESET = 'l', // Reset Mode ANSI
 
 	eDECCARA = '$r',    // Change attributes in rectangular area
 	eDECCRA = '$v',     // Copy rectangular area
@@ -141,6 +140,8 @@ enum MCSICmd : uint32_t
 	eDECSCA = '"q',     // Select character attribute
 	eDECSCL = '"p',     // Select Conformance Level
 	eDECSED = '?J',     // Selective erase in display
+	eDECSET = '?h',     // Set Mode DEC
+	eDECRESET = '?l',   // Reset Mode DEC
 	eDECSEL = '?K',     // Selective erase in line
 	eDECSERA = '${',    // Selective erase rectangular area
 	eDECSLPP = 't',     // Set Lines Per Page
@@ -212,7 +213,7 @@ enum MCSICmd : uint32_t
 	//	eDECTME =		' ~',		// Terminal Mode Emulation
 	//	eDECTST =		'y',		// Invoke Confidence Test
 	//	eDECUS =		',y',		// Update Session
-	
+
 };
 
 //	eDECKBUM =		'****', 	// Keyboard usage mode
@@ -261,16 +262,16 @@ struct MCmdName
 	{ ePPR, "PPR" },
 	{ eREP, "REP" },
 	{ eSAVEMODE, "SAVEMODE" },
-	{ eRM_ANSI, "RM_ANSI" },
-	{ eRM_DEC, "RM_DEC" },
+	{ eANSIRESET, "RM_ANSI" },
+	{ eDECRESET, "RM_DEC" },
 	{ eRESTMODE, "RESTMODE" },
 	{ eSCORC, "SCORC" },
 	{ eDECSLRM, "DECSLRM" },
 	{ eSD, "SD" },
 	{ eSGR, "SGR" },
 	{ eSL, "SL" },
-	{ eSM_ANSI, "SM_ANSI" },
-	{ eSM_DEC, "SM_DEC" },
+	{ eANSISET, "SM_ANSI" },
+	{ eDECSET, "SM_DEC" },
 	{ eSR, "SR" },
 	{ eSU, "SU" },
 	{ eTBC, "TBC" },

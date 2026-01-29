@@ -45,7 +45,6 @@ elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
-option(USE_BOOST_ASIO "Use the asio library from Boost instead of the non-boost version" OFF)
 option(BUILD_DOCUMENTATION "Build manual page" OFF)
 
 include(CPM)
@@ -56,13 +55,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-multichar")
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-endif()
-
-# add_compile_definitions(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
-add_compile_definitions(BOOST_ASIO_NO_DEPRECATED)
-
-if(USE_BOOST_ASIO)
-    add_compile_definitions(USE_BOOST_ASIO)
 endif()
 
 # Create a revision file, containing the current git version info
@@ -83,14 +75,10 @@ add_compile_options(-pthread)
 find_package(ZLIB REQUIRED)
 
 find_package(mcfp REQUIRED)
-#find_package(zeem REQUIRED)
 find_package(zeep REQUIRED)
 find_package(pinch REQUIRED)
 find_package(mgui REQUIRED)
 # find_package(gxrio REQUIRED)
-
-# add_subdirectory(libpinch EXCLUDE_FROM_ALL)
-# add_subdirectory(libmgui EXCLUDE_FROM_ALL)
 
 # Generate the manual first
 add_subdirectory(manual)

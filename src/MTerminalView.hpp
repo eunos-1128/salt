@@ -227,8 +227,11 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void GetRectParam(uint32_t inParamOffset,
 		int32_t &outTop, int32_t &outLeft, int32_t &outBottom, int32_t &outRight);
 
-	void SetResetMode(uint32_t inMode, bool inANSI, bool inSet);
-	bool GetMode(uint32_t inMode, bool inANSI);
+	void SetAnsiMode(uint32_t inMode, bool inSet);
+	bool GetAnsiMode(uint32_t inMode);
+
+	void SetDECMode(uint32_t inMode, bool inSet);
+	bool GetDECMode(uint32_t inMode);
 
 	MRect GetCharacterBounds(uint32_t inLine, uint32_t inColumn);
 	bool GetCharacterForPosition(int32_t inX, int32_t inY, int32_t &outLine, int32_t &outColumn);
@@ -448,6 +451,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 		eTrackMouseCellMotionTracking = 1002,
 		eTrackMouseAllMotionTracking = 1003
 	} mMouseMode;
+
 	int32_t mMouseTrackX, mMouseTrackY;
 
 	std::string mSetWindowTitle;
