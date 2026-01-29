@@ -49,6 +49,7 @@
 #include "MVT220CharSets.hpp"
 #include "MWindow.hpp"
 
+#include <ios>
 #include <pinch/debug.hpp>
 #include <zeep/crypto.hpp>
 #include <zeep/unicode-support.hpp>
@@ -281,6 +282,8 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	, cFindNext(this, "find-next", &MTerminalView::OnFindNext, kF3KeyCode, kControlKey)
 	, cFindPrev(this, "find-previous", &MTerminalView::OnFindPrev, kF3KeyCode, kControlKey | kShiftKey)
 
+	, cShowMenubar(this, "show-menubar", &MTerminalView::OnShowMenubar)
+
 	, mPFK(nullptr)
 	, mNewPFK(nullptr)
 	, mEscState(eESC_NONE)
@@ -323,6 +326,9 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 
 	std::string desc = MFormat("%dx%d", mTerminalWidth, mTerminalHeight);
 	mStatusbar->SetStatusText(2, desc, false);
+
+	// A context menu
+	CreateContextMenu("terminal-context-menu");
 
 	// and add this to the std::list of open terminals
 	sTerminalList.push_back(this);
@@ -371,6 +377,8 @@ void MTerminalView::AddedToWindow()
 	cFindNext.Register();
 	cFindPrev.Register();
 
+	cShowMenubar.Register();
+
 	cCopy.SetEnabled(false);
 	cEnterTOTP.SetState(-1);
 
@@ -388,6 +396,11 @@ MTerminalView *MTerminalView::GetFrontTerminal()
 	if (not sTerminalList.empty())
 		return sTerminalList.front();
 	return result;
+}
+
+void MTerminalView::OnShowMenubar(bool inShow)
+{
+	std::cout << "Show menubar: " <<std::boolalpha << inShow << '\n';
 }
 
 void MTerminalView::Open()
@@ -1050,19 +1063,19 @@ void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY)
 {
 	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		SendMouseCommand(2, true, inX, inY, 0);
-	else
-		SecondaryMouseButtonClick(inX, inY);
+	else if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
+	{
+		MClipboard::PrimaryInstance().GetData([this](const std::string &text)
+			{ DoPaste(text); });
+	}
 }
 
 void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY)
 {
 	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		SendMouseCommand(1, true, inX, inY, 0);
-	else if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
-	{
-		MClipboard::PrimaryInstance().GetData([this](const std::string &text)
-			{ DoPaste(text); });
-	}
+	else
+		ShowContextMenu(inX, inY);
 }
 
 void MTerminalView::Draw()

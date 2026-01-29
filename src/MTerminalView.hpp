@@ -264,6 +264,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void OnFindNext();
 	void OnFindPrev();
 
+	void OnShowMenubar(bool inChecked);
+
 	MCommand<void(int)> cEnterTOTP;
 	MCommand<void()> cCopy;
 	MCommand<void()> cPaste;
@@ -287,6 +289,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	MCommand<void()> cFindNext;
 	MCommand<void()> cFindPrev;
+
+	MCommand<void(bool)> cShowMenubar;
 
 	std::deque<char> mInputBuffer;
 	bool mBracketedPaste = false;

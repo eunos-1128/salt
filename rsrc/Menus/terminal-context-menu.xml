@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone="yes"?>
+<menu id='context' label=''>
+	<item label="Copy" cmd='win.copy' />
+	<item label="Paste" cmd='win.paste' />
+
+	<separator />
+
+	<item label="Preferences" cmd='app.preferences' />
+
+	<separator />
+
+	<item label="Open Terminal" cmd='app.new-terminal' />
+	<item label="Connect…" cmd='app.connect' />
+	<item label="Duplicate" cmd='win.clone-terminal' />
+
+	<separator />
+
+	<item label="Show menubar" cmd='win.show-menubar' />
+</menu>
