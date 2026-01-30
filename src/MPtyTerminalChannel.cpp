@@ -254,6 +254,7 @@ void MPtyTerminalChannel::Close()
 	{
 		int status;
 		waitpid(mPid, &status, WNOHANG);
+		mPid = -1;
 	}
 }
 
@@ -264,12 +265,8 @@ bool MPtyTerminalChannel::IsOpen() const
 
 bool MPtyTerminalChannel::AllowClose() const
 {
-	bool result = true;
-
-	if (mPid > 0)
-		result = tcgetpgrp(const_cast<asio_ns::posix::stream_descriptor &>(mPty).native_handle()) == mPid;
-
-	return result;
+	return mPty.is_open() == false or
+	       (mPid > 0 and tcgetpgrp(const_cast<asio_ns::posix::stream_descriptor &>(mPty).native_handle()) == mPid);
 }
 
 std::filesystem::path MPtyTerminalChannel::GetCWD() const
