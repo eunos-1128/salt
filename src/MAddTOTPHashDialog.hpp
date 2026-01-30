@@ -29,13 +29,13 @@
 
 #pragma once
 
-#include "MDialog.hpp"
+#include <MDialog.hpp>
 
 class MAddTOTPHashDialog : public MDialog
 {
   public:
 	MAddTOTPHashDialog();
-	~MAddTOTPHashDialog();
+	~MAddTOTPHashDialog() override;
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 };

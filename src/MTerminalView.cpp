@@ -28,36 +28,40 @@
 // All rights reserved
 
 #include "MTerminalView.hpp"
-#include "MAlerts.hpp"
-#include "MAnimation.hpp"
-#include "MApplication.hpp"
 #include "MCSICommands.hpp"
-#include "MClipboard.hpp"
-#include "MControls.hpp"
-#include "MDevice.hpp"
-#include "MFile.hpp"
-#include "MPreferences.hpp"
 #include "MPreferencesDialog.hpp"
 #include "MSaltApp.hpp"
 #include "MSearchPanel.hpp"
-#include "MSound.hpp"
-#include "MStrings.hpp"
 #include "MTerminalBuffer.hpp"
 #include "MTerminalColours.hpp"
-#include "MUnicode.hpp"
-#include "MUtils.hpp"
 #include "MVT220CharSets.hpp"
-#include "MWindow.hpp"
 
+#include <MAlerts.hpp>
+#include <MAnimation.hpp>
+#include <MApplication.hpp>
+#include <MClipboard.hpp>
+#include <MControls.hpp>
+#include <MDevice.hpp>
+#include <MFile.hpp>
+#include <MPreferences.hpp>
+#include <MSound.hpp>
+#include <MStrings.hpp>
 #include <MTypes.hpp>
-#include <ios>
+#include <MUnicode.hpp>
+#include <MUtils.hpp>
+#include <MWindow.hpp>
+
+#include <algorithm>
+#include <cstddef>
 #include <pinch/debug.hpp>
+#include <utility>
 #include <zeep/crypto.hpp>
 #include <zeep/unicode-support.hpp>
 #include <zeep/uri.hpp>
 
 #include <chrono>
 #include <cmath>
+#include <ios>
 #include <map>
 #include <regex>
 #include <source_location>
@@ -91,6 +95,7 @@ const char
 	kVT420Attributes[] = "\033[?64;1;2;6;8;9c";
 //	kVT520Attributes[] = "\033[?65;1;2;6;8;9c";
 
+// NOLINTBEGIN(bugprone-throwing-static-initialization)
 const std::string
 	kCSI("\033["),
 	kSS3("\033O"),
@@ -104,6 +109,7 @@ std::chrono::system_clock::duration
 
 std::string
 	kControlBreakMessage("Hello, world!");
+// NOLINTEND(bugprone-throwing-static-initialization)
 
 enum MCtrlChr : uint8_t
 {
@@ -206,34 +212,12 @@ struct MPFK
 };
 
 // --------------------------------------------------------------------
-// Too bad the format library isn't finished yet
-
-class MFormat
-{
-  public:
-	template <typename... Arguments>
-	MFormat(const char *fmt, Arguments... args)
-		: m_str(255, 0)
-	{
-		auto n = snprintf(m_str.data(), 255, fmt, args...);
-		m_str.resize(n);
-	}
-
-	operator std::string() const
-	{
-		return m_str;
-	}
-
-  private:
-	std::string m_str;
-};
-
-// --------------------------------------------------------------------
 // The MTerminalView class.
 
 std::list<MTerminalView *> MTerminalView::sTerminalList;
 MColor MTerminalView::sSelectionColor;
 
+// NOLINTNEXTLINE(hicpp-member-init)
 MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	MStatusbar *inStatusbar, MScrollbar *inScrollbar, MSearchPanel *inSearchPanel,
 	MTerminalChannel *inTerminalChannel, const std::vector<std::string> &inArgv)
@@ -244,7 +228,6 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	, ePreviewBackColor(this, &MTerminalView::PreviewBackColor)
 	, ePreviewSelectionColor(this, &MTerminalView::PreviewSelectionColor)
 	, eStatusPartClicked(this, &MTerminalView::StatusPartClicked)
-	, mStatusInfo(0)
 	, mStatusbar(inStatusbar)
 	, mScrollbar(inScrollbar)
 	, mSearchPanel(inSearchPanel)
@@ -283,14 +266,8 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 	, cFindNext(this, "find-next", &MTerminalView::OnFindNext, kF3KeyCode, kControlKey)
 	, cFindPrev(this, "find-previous", &MTerminalView::OnFindPrev, kF3KeyCode, kControlKey | kShiftKey)
 
-	, mPFK(nullptr)
-	, mNewPFK(nullptr)
-	, mEscState(eESC_NONE)
 	, eAnimate(this, &MTerminalView::Animate)
-	, mDECSASD(false)
-	, mDECSSDT(0)
 	, mAnimationManager(new MAnimationManager())
-	, mGraphicalBeep(nullptr)
 	, mDisabledFactor(mAnimationManager->CreateVariable(1, 0, 1))
 
 	, eIOStatus(this, &MTerminalView::OnIOStatus)
@@ -323,7 +300,7 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 
 	AdjustScrollbar(0);
 
-	std::string desc = MFormat("%dx%d", mTerminalWidth, mTerminalHeight);
+	std::string desc = std::format("{}x{}", mTerminalWidth, mTerminalHeight);
 	mStatusbar->SetStatusText(2, desc, false);
 
 	// A context menu
@@ -335,7 +312,7 @@ MTerminalView::MTerminalView(const std::string &inID, MRect inBounds,
 
 MTerminalView::~MTerminalView()
 {
-	sTerminalList.erase(remove(sTerminalList.begin(), sTerminalList.end(), this), sTerminalList.end());
+	std::erase(sTerminalList, this);
 
 	delete mPFK;
 	delete mNewPFK;
@@ -494,8 +471,8 @@ void MTerminalView::PreferencesChanged()
 
 	MRect bounds = GetBounds();
 
-	uint32_t w = static_cast<uint32_t>(std::ceil(mTerminalWidth * mCharWidth) + 2 * kBorderWidth);
-	uint32_t h = mTerminalHeight * mLineHeight + 2 * kBorderWidth;
+	auto w = static_cast<uint32_t>(std::ceil(mTerminalWidth * mCharWidth) + 2 * kBorderWidth);
+	auto h = mTerminalHeight * mLineHeight + 2 * kBorderWidth;
 
 	if (mDECSSDT > 0)
 		h += mLineHeight;
@@ -713,7 +690,7 @@ void MTerminalView::ResizeTerminal(uint32_t inColumns, uint32_t inRows, bool inR
 
 	if (mStatusbar != nullptr)
 	{
-		std::string desc = MFormat("%dx%d", mTerminalWidth, mTerminalHeight);
+		std::string desc = std::format("{}x{}", mTerminalWidth, mTerminalHeight);
 		mStatusbar->SetStatusText(2, desc, false);
 	}
 
@@ -1167,7 +1144,7 @@ void MTerminalView::Draw()
 		if (mDECSSDT == 1)
 		{
 			// write default status line
-			text = MFormat(" 1 (%03.3d,%03.3d)", mCursor.y + 1, mCursor.x + 1);
+			text = std::format(" 1 ({:03d},{:03d})", mCursor.y + 1, mCursor.x + 1);
 
 			std::string trailing = "Printer: None          Network: ";
 			trailing += (mTerminalChannel->IsOpen() ? "Connected    " : "Not Connected");
@@ -1229,7 +1206,7 @@ void MTerminalView::Draw()
 
 		auto pushColor = [&](MColor c, bool back, uint32_t offset)
 		{
-			uint32_t ix = find(colors.begin(), colors.end(), c) - colors.begin();
+			uint32_t ix = std::ranges::find(colors, c) - colors.begin();
 			if (ix >= colors.size())
 				colors.push_back(c);
 
@@ -1350,7 +1327,7 @@ void MTerminalView::Draw()
 				style |= MDevice::eTextStyleUnderline;
 
 			// hyper link tracking
-			if ((linkNr != 0 and linkNr == mCurrentLink) or
+			if ((linkNr != 0 and std::cmp_equal(linkNr, mCurrentLink)) or
 				(mCurrentLink == -1 and c >= hvc1 and c < hvc2))
 			{
 				style |= MDevice::eTextStyleDoubleUnderline;
@@ -1473,10 +1450,7 @@ void MTerminalView::Idle()
 	}
 
 	if (mBuffer->IsDirty())
-	{
-		std::string desc = (MFormat("%d,%d", mCursor.x + 1, mCursor.y + 1));
-		mStatusbar->SetStatusText(3, desc, false);
-	}
+		mStatusbar->SetStatusText(3, std::format("{},{}", mCursor.x + 1, mCursor.y + 1), false);
 
 	if (update or mBuffer->IsDirty())
 		Invalidate();
@@ -1557,7 +1531,7 @@ std::string MTerminalView::ProcessKeyVT52(uint32_t inKeyCode, uint32_t inModifie
 					}
 				}
 				else if ((inKeyCode >= '0' and inKeyCode <= '9') or inKeyCode == '-' or inKeyCode == '.')
-					text = char(inKeyCode);
+					text = static_cast<char>(inKeyCode);
 				else if (inKeyCode == '+' or inKeyCode == ',')
 					text = ',';
 				break;
@@ -1611,43 +1585,43 @@ std::string MTerminalView::ProcessKeyANSI(uint32_t inKeyCode, uint32_t inModifie
 		switch (inKeyCode)
 		{
 			case kNumlockKeyCode:
-				text = kSS3 + 'P';
+				text = "\033P";
 				break;
 			case kDivideKeyCode:
-				text = kSS3 + 'Q';
+				text = "\033Q";
 				break;
 			case kMultiplyKeyCode:
-				text = kSS3 + 'R';
+				text = "\033R";
 				break;
 			case kSubtractKeyCode:
 				if (inModifiers & kOptionKey)
 				{
 					inModifiers &= ~kOptionKey;
-					text = mDECNMK ? "\033Om" : "-";
+					text = mDECNMK ? "\033?o" : "-";
 				}
 				else
-					text = kSS3 + 'S';
+					text = "\033S";
 				break;
 			case kEnterKeyCode:
 				if (mDECNMK)
-					text = "\033OM";
+					text = "\033?M";
 				else
 					text = mLNM ? "\r\n" : "\r";
 				break;
 			case ',':
-				text = mDECNMK ? "\033Ol" : ",";
+				text = mDECNMK ? "\033?l" : ",";
 				break;
 			case '+':
-				text = mDECNMK ? "\033Ol" : ",";
+				text = mDECNMK ? "\033?k" : ",";
 				break;
 			case '.':
-				text = mDECNMK ? "\033On" : ".";
+				text = mDECNMK ? "\033?n" : ".";
 				break;
 			default:
 				if (mDECNMK)
-					text = kSS3 + char(inKeyCode - '0' + 'p');
+					text = { '\033', '?', static_cast<char>(inKeyCode - '0' + 'p') };
 				else
-					text = char(inKeyCode);
+					text = static_cast<char>(inKeyCode);
 				break;
 		}
 	}
@@ -1852,6 +1826,9 @@ std::string MTerminalView::ProcessKeyXTerm(uint32_t inKeyCode, uint32_t inModifi
 
 	if (inModifiers & kNumPad)
 	{
+		// TODO: maarten - This code is not working properly since the characters are already sent to the host
+		// Will have to introduce a peek or something into the handling of key down events
+
 		if (mDECNMK)
 		{
 			switch (inKeyCode)
@@ -1927,7 +1904,7 @@ std::string MTerminalView::ProcessKeyXTerm(uint32_t inKeyCode, uint32_t inModifi
 					break;
 				default:
 					if (inKeyCode >= '0' and inKeyCode <= '9')
-						text = char(inKeyCode);
+						text = static_cast<char>(inKeyCode);
 					break;
 			}
 		}
@@ -1946,7 +1923,7 @@ std::string MTerminalView::ProcessKeyXTerm(uint32_t inKeyCode, uint32_t inModifi
 			MEncodingTraits<kEncodingUTF8>::WriteUnicode(iter, inKeyCode + 128);
 		}
 		else
-			text = char(inKeyCode + 128);
+			text = static_cast<char>(inKeyCode + 128);
 	}
 
 	return text;
@@ -2023,7 +2000,7 @@ bool MTerminalView::KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t 
 			break;
 
 		// VT220, device control strings
-		if (inModifiers == (mUDKWithShift ? kShiftKey : 0) and
+		if (std::cmp_equal(inModifiers, (mUDKWithShift ? kShiftKey : 0)) and
 			inKeyCode >= kF1KeyCode and inKeyCode <= kF20KeyCode and
 			mPFK != nullptr and
 			mPFK->key.find(inKeyCode) != mPFK->key.end())
@@ -2042,7 +2019,7 @@ bool MTerminalView::KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t 
 		if (text.empty())
 		{
 			if (inKeyCode == kBackspaceKeyCode)
-				text = mDECBKM ? BS : DEL;
+				text = { static_cast<char>(mDECBKM ? BS : DEL) };
 			else if (inKeyCode == kReturnKeyCode)
 				text = mLNM ? "\r\n" : "\r";
 			else if (inKeyCode == kTabKeyCode)
@@ -2053,37 +2030,37 @@ bool MTerminalView::KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t 
 				{
 					case '2':
 					case ' ':
-						text = NUL;
+						text = { NUL };
 						break;
 					case '3':
-						text = ESC;
+						text = { ESC };
 						break;
 					case '4':
-						text = FS;
+						text = { FS };
 						break;
 					case '5':
-						text = GS;
+						text = { GS };
 						break;
 					case '6':
-						text = RS;
+						text = { RS };
 						break;
 					case '7':
-						text = US;
+						text = { US };
 						break;
 					case '8':
-						text = DEL;
+						text = { DEL };
 						break;
 					default:
 						// check to see if this is a decent control key
 						if ((inKeyCode & ~0x20) >= '@' and (inKeyCode & ~0x20) < '`')
-							text = char((inKeyCode & ~0x20) - '@');
+							text = { static_cast<char>((inKeyCode & ~0x20) - '@') };
 						else if (inKeyCode == kCancelKeyCode)
 							text = kControlBreakMessage;
 						break;
 				}
 			}
 			else if (inModifiers & kControlKey and (inKeyCode == '@' or (inKeyCode >= '[' and inKeyCode < '`')))
-				text = char(inKeyCode - '@');
+				text = static_cast<char>(inKeyCode - '@');
 		}
 
 		if (not text.empty())
@@ -2323,7 +2300,7 @@ void MTerminalView::OnEnterTOTP(int inItemIndex)
 		for (int i = 8; i-- > 0; timestamp >>= 8)
 			val[i] = static_cast<uint8_t>(timestamp);
 
-		auto computed = zeep::hmac_sha1(std::string_view((char *)val, 8), h);
+		auto computed = zeep::hmac_sha1(std::string_view(reinterpret_cast<char *>(val), 8), h);
 
 		int offset = computed.back() & 0xf;
 		uint32_t truncated = 0;
@@ -2688,8 +2665,8 @@ void MTerminalView::ResizeFrame(int32_t inWidthDelta, int32_t inHeightDelta)
 	if (static_cast<uint32_t>(bounds.width) <= 2 * kBorderWidth or static_cast<uint32_t>(bounds.height) <= 2 * kBorderWidth)
 		return;
 
-	int32_t w = static_cast<int32_t>((bounds.width - 2 * kBorderWidth) / dev.GetXWidth());
-	int32_t h = static_cast<int32_t>((bounds.height - 2 * kBorderWidth) / dev.GetLineHeight());
+	auto w = static_cast<int32_t>((bounds.width - 2 * kBorderWidth) / dev.GetXWidth());
+	auto h = static_cast<int32_t>((bounds.height - 2 * kBorderWidth) / dev.GetLineHeight());
 
 	if (mDECSSDT > 0)
 		h -= 1;
@@ -3336,8 +3313,6 @@ void MTerminalView::Emulate()
 							EscapeOSC(ch);
 							break;
 						case ePM:
-							mEscState = eESC_NONE;
-							break;
 						case eAPC:
 							mEscState = eESC_NONE;
 							break;
@@ -3732,15 +3707,10 @@ void MTerminalView::EscapeStart(uint8_t inChar)
 
 		// unimplemented for now
 		case 'l': /* Memory Lock */
-			break;
 		case 'm': /* Memory Unlock */
-			break;
 		case '^': /* privacy message */
-			break;
 		case 'X': /* Start of std::string */
-			break;
-
-		default: /* ignore */
+		default:  /* ignore */
 			break;
 	}
 }
@@ -3767,15 +3737,15 @@ void MTerminalView::EscapeCSI(uint8_t inChar)
 	else if (inChar == ';')
 		mArgs.push_back(0);
 	else if (inChar >= ' ' and inChar <= '?')
-		mCSICmd = mCSICmd << 8 | uint8_t(inChar);
+		mCSICmd = mCSICmd << 8 | inChar;
 	else if (not(inChar >= '0' and inChar <= '~'))
 		mEscState = eESC_NONE; // error
 	else
 	{
 		mEscState = eESC_NONE;
-		mCSICmd = mCSICmd << 8 | uint8_t(inChar);
+		mCSICmd = mCSICmd << 8 | inChar;
 
-		MCSICmd cmd = static_cast<MCSICmd>(mCSICmd);
+		auto cmd = static_cast<MCSICmd>(mCSICmd);
 
 		// PRINT(("CSI: %s (%x)", mCtrlSeq.c_str(), mCSICmd));
 
@@ -3879,7 +3849,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			mDECVSSM = false;
 			mMarginLeft = 0;
 			mMarginRight = mTerminalWidth - 1;
-			// TODO clear status line if host writable
+			// TODO: maarten - clear status line if host writable
 			break;
 		}
 
@@ -3899,15 +3869,15 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 					SendCommand("\033[0n");
 					break; // terminal OK
 				case 6:
-					SendCommand(MFormat("\033[%d;%dR", mCursor.y + 1, mCursor.x + 1));
+					SendCommand(std::format("\033[{};{}R", mCursor.y + 1, mCursor.x + 1));
 					break;
 				case 15:
 					SendCommand("\033[?13n");
 					break; // we have no printer
 				case 25:
-					SendCommand(MFormat("\033[?2%dn", mPFK != nullptr and mPFK->locked));
+					SendCommand(std::format("\033[?2{:1d}n", mPFK != nullptr and mPFK->locked));
 					break;
-				// TODO: Find out the keyboard layout
+				// TODO: maarten - Find out the keyboard layout
 				case 26:
 					SendCommand("\033[?27;0n");
 					break; // report an unknown keyboard for now
@@ -3918,13 +3888,13 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			switch (GetParam(0, 0))
 			{
 				case 6:
-					SendCommand(MFormat("\033[?%d;%d;1R", mCursor.y + 1, mCursor.x + 1));
+					SendCommand(std::format("\033[?{};{};1R", mCursor.y + 1, mCursor.x + 1));
 					break;
 				case 15:
 					SendCommand("\033[?11n");
 					break;
 				case 25:
-					SendCommand(MFormat("\033[?2%dn", mPFK != nullptr and mPFK->locked));
+					SendCommand(std::format("\033[?2{}n", mPFK != nullptr and mPFK->locked));
 					break;
 				case 26:
 					SendCommand("\033[?27;1n");
@@ -3966,16 +3936,16 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-			break;
+				  // break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-			break;
+				  // break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
-			break;
+				   // break;
 		// PPB -- Page Position Backwards
 		case ePPB: /* unimplemented */
-			break;
+				   // break;
 		// PPR -- Page Position Relative
 		case ePPR: /* unimplemented */
 			break;
@@ -4167,7 +4137,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 
 							case 5:
 							{
-								uint8_t colorIndex = static_cast<uint8_t>(mArgs[++i]);
+								auto colorIndex = static_cast<uint8_t>(mArgs[++i]);
 								if (a == 38)
 									mCursor.foreground = k256AnsiColors[colorIndex];
 								else
@@ -4198,7 +4168,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 						mTabStops[mCursor.x] = false;
 					break;
 				case 3:
-					fill(mTabStops.begin(), mTabStops.end(), false);
+					std::fill(mTabStops.begin(), mTabStops.end(), false);
 					break;
 			}
 			break;
@@ -4243,7 +4213,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			break;
 		// DECREQTPARM -- no comment
 		case eDECREQTPARM:
-			SendCommand((MFormat("\033[%d;1;1;128;128;1;0x", mArgs[0] + 2)));
+			SendCommand((std::format("\033[{};1;1;128;128;1;0x", mArgs[0] + 2)));
 			break;
 		// XTERMEMK -- Reset XTerm modify keys
 		case eXTERMEMK:
@@ -4253,7 +4223,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//					case 1:	mModifyFunctionKeys = GetParam(1, 0); break;
 			//					case 1:	mModifyOtherKeys = GetParam(1, 0); break;
 			//				}
-			break;
+			// break;
 		// XTERMDMK -- Set XTerm modify keys
 		case eXTERMDMK:
 			//				switch (GetParam(0, 0))
@@ -4262,7 +4232,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//					case 1:	mModifyFunctionKeys = -1; break;
 			//					case 1:	mModifyOtherKeys = -1; break;
 			//				}
-			break;
+			// break;
 		case eXTERMDMKR: // request modifyCursorKeyState
 			break;
 
@@ -4307,7 +4277,7 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 		case eDECELR:
 			// PRINT(("DECELR iets met de muis doen?"));
 			// hmmmm
-			break;
+			// break;
 
 		default:
 			// PRINT(("Unhandled CSI level 1 command: %s (%x)", mCtrlSeq.c_str(), mCSICmd));
@@ -4436,7 +4406,7 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 			if (w == 0 or h == 0)
 				break;
 
-			std::vector<MChar> buffer(mTerminalWidth * mTerminalHeight);
+			std::vector<MChar> buffer(static_cast<size_t>(mTerminalWidth * mTerminalHeight));
 			uint32_t i = 0;
 			mBuffer->ForeachInRectangle(t, l, b, r,
 				[&i, &buffer](MChar &inChar, int32_t inLine, int32_t inColumn)
@@ -4490,10 +4460,10 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 
 		// DECINVM -- Invoke stored macro
 		case eDECINVM: /* unimplemented */
-			break;
+					   // break;
 		// DECLFKC -- Local function key control
 		case eDECLFKC: /* unimplemented */
-			break;
+					   // break;
 		// DECMSR -- Macro Space Report
 		case eDECMSR: /* unimplemented */
 			break;
@@ -4537,27 +4507,27 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 
 		// DECRPM -- Report mode
 		case eDECRPM: /* unimplemented */
-			break;
+					  // break;
 		// DECRQCRA -- Request checksum of rectangular area
 		case eDECRQCRA: /* unimplemented */
 			break;
 		// DECRQDE -- Request displayed extent
 		case eDECRQDE:
-			SendCommand(MFormat("\033[%d;%d;1;1;1\"w", mTerminalHeight, mTerminalWidth));
+			SendCommand(std::format("\033[{};{};1;1;1\"w", mTerminalHeight, mTerminalWidth));
 			break;
 
 		// DECRQMANSI -- Request mode ANSI
 		case eDECRQMANSI:
 		{
 			int p = GetParam(0, 0);
-			SendCommand(MFormat("\033[%d;%d$y", p, GetAnsiMode(p) ? 1 : 2));
+			SendCommand(std::format("\033[{};{}$y", p, GetAnsiMode(p) ? 1 : 2));
 			break;
 		}
 		// DECRQMDEC -- Request mode DEC Private
 		case eDECRQMDEC:
 		{
 			int p = GetParam(0, 0);
-			SendCommand(MFormat("\033[?%d;%d$y", p, GetDECMode(p) ? 1 : 2));
+			SendCommand(std::format("\033[?{};{}$y", p, GetDECMode(p) ? 1 : 2));
 			break;
 		}
 		// DECRQPSR -- Request presentation state
@@ -4567,16 +4537,16 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 				case 1: /* DECCIR */
 				{
 					auto st = mCursor.style;
-					SendCommand(MFormat("\033P1$u%d;%d;%d;%c;%c;%c;%d;%d;%c;%c%c%c%c\033\\",
+					SendCommand(std::format("\033P1$u{};{};{};{:1d};{:1d};{:1d};{};{};{:1d};{:1d}{:1d}{:1d}{:1d}\033\\",
 						mCursor.y + 1,
 						mCursor.x + 1,
 						1,
-						char(0x40 + (st & kStyleInverse ? 8 : 0) + (st & kStyleBlink ? 4 : 0) + (st & kStyleUnderline ? 2 : 0) + (st & kStyleBold ? 1 : 0)),
-						char(0x40 + (st & kUnerasable ? 1 : 0)),
-						char(0x40 + (mCursor.DECAWM ? 8 : 0) + (mCursor.SS == 3 ? 4 : 0) + (mCursor.SS == 2 ? 2 : 0) + (mCursor.DECOM ? 1 : 0)),
+						static_cast<char>(0x40 + (st & kStyleInverse ? 8 : 0) + (st & kStyleBlink ? 4 : 0) + (st & kStyleUnderline ? 2 : 0) + (st & kStyleBold ? 1 : 0)),
+						static_cast<char>(0x40 + (st & kUnerasable ? 1 : 0)),
+						static_cast<char>(0x40 + (mCursor.DECAWM ? 8 : 0) + (mCursor.SS == 3 ? 4 : 0) + (mCursor.SS == 2 ? 2 : 0) + (mCursor.DECOM ? 1 : 0)),
 						mCursor.CSGL,
 						mCursor.CSGR,
-						char(0x5f), // pffft, not sure about this one... FIXME
+						static_cast<char>(0x5f), // pffft, not sure about this one... FIXME
 						mCursor.charSetGSel[0],
 						mCursor.charSetGSel[1],
 						mCursor.charSetGSel[2],
@@ -4671,14 +4641,14 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 					break;
 				case 13:
 					GetWindow()->GetWindowPosition(r);
-					SendCommand(MFormat("\033[3;%d;%dt", r.x, r.y));
+					SendCommand(std::format("\033[3;{};{}t", r.x, r.y));
 					break;
 				case 14:
 					r = GetWindow()->GetBounds();
-					SendCommand(MFormat("\033[4;%d;%dt", r.width, r.height));
+					SendCommand(std::format("\033[4;{};{}t", r.width, r.height));
 					break;
 				case 18:
-					SendCommand(MFormat("\033[8;%d;%dt", mTerminalWidth, mTerminalHeight));
+					SendCommand(std::format("\033[8;{};{}t", mTerminalWidth, mTerminalHeight));
 					break;
 				case 20:
 					SendCommand("\033]L\033\\");
@@ -4785,7 +4755,7 @@ void MTerminalView::ProcessCSILevel4(uint32_t inCmd)
 			break;
 		// DECSWBV -- Set Warning Bell Volume
 		case eDECSWBV: /* unimplemented */
-			break;
+					   // break;
 		// DECSMBV -- Set Margin Bell Volume
 		case eDECSMBV: /* unimplemented */
 			break;
@@ -4821,7 +4791,7 @@ void MTerminalView::SelectCharSet(uint8_t inChar)
 	{
 		if (mDECSCL == 1 and charset > 1)
 		{
-			// PRINT(("Unsupported set G%d", charset));
+			// PRINT(("Unsupported set G{}", charset));
 			return;
 		}
 
@@ -4966,7 +4936,7 @@ void MTerminalView::CommitPFK()
 			else
 				c2 -= 'a' + 10;
 
-			s += char((c1 << 4) | c2);
+			s += static_cast<char>((c1 << 4) | c2);
 		}
 		mNewPFK->key[k.first] = s;
 	}
@@ -4978,7 +4948,7 @@ void MTerminalView::CommitPFK()
 	}
 	else
 	{
-		for (auto k : mNewPFK->key)
+		for (const auto &k : mNewPFK->key)
 			mPFK->key[k.first] = k.second;
 		delete mNewPFK;
 	}
@@ -5000,58 +4970,58 @@ void MTerminalView::EscapeDCS(uint8_t inChar)
 			{
 				std::vector<std::string> sgr;
 				if (mCursor.style & kStyleBold)
-					sgr.push_back("1");
+					sgr.emplace_back("1");
 				if (mCursor.style & kStyleUnderline)
-					sgr.push_back("4");
+					sgr.emplace_back("4");
 				if (mCursor.style & kStyleBlink)
-					sgr.push_back("5");
+					sgr.emplace_back("5");
 				if (mCursor.style & kStyleInverse)
-					sgr.push_back("7");
+					sgr.emplace_back("7");
 				if (mCursor.style & kStyleInvisible)
-					sgr.push_back("8");
+					sgr.emplace_back("8");
 				if (mCursor.foreground)
 					sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
 				if (mCursor.background)
 					sgr.push_back(std::to_string(40 + LookupColor(*mCursor.background)));
 
-				response = MFormat("\033P1$r%s", Join(sgr, ";").c_str());
+				response = std::format("\033P1$r%s", Join(sgr, ";").c_str());
 			}
 			//			else if (mDECRQSS == ",|")	// DECAC - Assign Color
 			//			else if (mDECRQSS == ",}")	// DECATC - Alternate Text Color
 			else if (mDECRQSS == "$}") // DECSASD - Select Active Status Display
 				response = "\033P1$r0}";
 			else if (mDECRQSS == "*x") // DECSACE - Select Attribute Change Extent
-				response = MFormat("\033P1$r%d", mDECSACE ? 2 : 1);
+				response = std::format("\033P1$r{}", mDECSACE ? 2 : 1);
 			else if (mDECRQSS == "\"q") // DECSCA - Set Character Attribute
 				response = mCursor.style & kUnerasable ? "\033P1$r1" : "\033P1$r0";
 			else if (mDECRQSS == "$|") // DECSCPP - Set Columns Per Page
-				response = MFormat("\033P1$r%d", mTerminalWidth);
+				response = std::format("\033P1$r{}", mTerminalWidth);
 			//			else if (mDECRQSS == "*r")	// DECSCS - Select Communication Speed
 			//			else if (mDECRQSS == "*u")	// DECSCP - Select Communication Port
 			else if (mDECRQSS == "\"p") // DECSCL - Set Conformance Level
 			{
 				if (mDECSCL >= 2)
-					response = MFormat("\033P1$r%d;%d", mDECSCL, mS8C1T ? 0 : 1);
+					response = std::format("\033P1$r{};{}", mDECSCL, mS8C1T ? 0 : 1);
 				else
 					response = "\033P1$r61";
 			}
 			else if (mDECRQSS == " q") // DECSCUSR - Set Cursor Style
 			{
 				int cs = mCursor.block ? (mCursor.blink ? 1 : 2) : (mCursor.blink ? 3 : 4);
-				response = MFormat("\033P1$r%d", cs);
+				response = std::format("\033P1$r{}", cs);
 			}
 			//			else if (mDECRQSS == ")p")	// DECSDPT - Select Digital Printed Data Type
 			//			else if (mDECRQSS == "$q")	// DECSDDT - Select Disconnect Delay Time
 			//			else if (mDECRQSS == "*s")	// DECSFC - Select Flow Control Type
 			//			else if (mDECRQSS == " r")	// DECSKCV - Set Key Click Volume
 			else if (mDECRQSS == "s") // DECSLRM - Set Left and Right Margins
-				response = MFormat("\033P1$r%d;%d", mMarginLeft + 1, mMarginRight + 1);
+				response = std::format("\033P1$r{};{}", mMarginLeft + 1, mMarginRight + 1);
 			else if (mDECRQSS == "t") // DECSLPP - Set Lines Per Page
-				response = MFormat("\033P1$r%d", mTerminalHeight);
+				response = std::format("\033P1$r{}", mTerminalHeight);
 			//			else if (mDECRQSS == " v")	// DECSLCK - Set Lock Key Style
 			//			else if (mDECRQSS == " u")	// DECSMBV - Set Margin Bell Volume
 			else if (mDECRQSS == "*|") // DECSNLS - Set Number of Lines per Screen
-				response = MFormat("\033P1$r%d", mTerminalHeight);
+				response = std::format("\033P1$r{}", mTerminalHeight);
 			//			else if (mDECRQSS == ",x")	// DECSPMA - Session Page Memory Allocation
 			//			else if (mDECRQSS == "+w")	// DECSPP - Set Port Parameter
 			//			else if (mDECRQSS == "$s")	// DECSPRTT - Select Printer Type
@@ -5059,9 +5029,9 @@ void MTerminalView::EscapeDCS(uint8_t inChar)
 			//			else if (mDECRQSS == " p")	// DECSSCLS - Set Scroll Speed
 			//			else if (mDECRQSS == "p")	// DECSSL - Select Set-Up Language
 			else if (mDECRQSS == "$~") // DECSSDT - Set Status Line Type
-				response = MFormat("\033P1$r%d", mDECSSDT);
+				response = std::format("\033P1$r{}", mDECSSDT);
 			else if (mDECRQSS == "r") // DECSTBM - Set Top and Bottom Margins
-				response = MFormat("\033P1$r%d;%d", mMarginTop + 1, mMarginBottom + 1);
+				response = std::format("\033P1$r{};{}", mMarginTop + 1, mMarginBottom + 1);
 			//			else if (mDECRQSS == "\"u")	// DECSTRL - Set Transmit Rate Limit
 			//			else if (mDECRQSS == " t")	// DECSWBV - Set Warning Bell Volume
 			//			else if (mDECRQSS == ",{")	// DECSZS - Select Zero Symbol
@@ -5371,7 +5341,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 			}
 
 			default:
-				// PRINT(("Ignored %d OSC option", mArgs[0]));
+				// PRINT(("Ignored {} OSC option", mArgs[0]));
 				break;
 		}
 	}
@@ -5456,7 +5426,7 @@ void MTerminalView::EscapeAPC(uint8_t inChar)
 				break;
 
 			default:
-				// PRINT(("Ignored %d APC option", mArgs[0]));
+				// PRINT(("Ignored {} APC option", mArgs[0]));
 				break;
 		}
 	}
@@ -5505,7 +5475,7 @@ void MTerminalView::EscapeAPC(uint8_t inChar)
 	}
 }
 
-void MTerminalView::SaveCursor(void)
+void MTerminalView::SaveCursor()
 {
 	if (mBuffer == &mAlternateBuffer)
 	{
@@ -5519,7 +5489,7 @@ void MTerminalView::SaveCursor(void)
 	}
 }
 
-void MTerminalView::RestoreCursor(void)
+void MTerminalView::RestoreCursor()
 {
 	if (mBuffer == &mAlternateBuffer and mAlternate.saved)
 		mCursor = mAlternate;
@@ -5575,8 +5545,7 @@ void MTerminalView::Beep()
 
 	if (mGraphicalBeep and now - mLastBeep > 250ms)
 	{
-		if (mAnimationManager->Update())
-			; // PRINT(("duh"));
+		(void)mAnimationManager->Update();
 
 		MStoryboard *storyboard = mAnimationManager->CreateStoryboard();
 		storyboard->AddTransition(mGraphicalBeep, 0.75, 100ms, "acceleration-decelleration");
@@ -5613,7 +5582,7 @@ void MTerminalView::SetAnsiMode(uint32_t inMode, bool inSet)
 			mLNM = inSet;
 			break;
 		default:
-			// PRINT(("Ignored %s of option %d", inSet ? "set" : "reset", inMode));
+			// PRINT(("Ignored %s of option {}", inSet ? "set" : "reset", inMode));
 			break;
 	}
 }
@@ -5879,7 +5848,8 @@ void MTerminalView::UploadFile(const std::filesystem::path &path)
 {
 	if (mTerminalChannel->CanDownloadFiles())
 	{
-		MFileDialogs::ChooseOneFile(GetWindow(), [path, channel = mTerminalChannel](bool, std::filesystem::path file)
+		MFileDialogs::ChooseOneFile(GetWindow(),
+			[path, channel = mTerminalChannel](bool, const std::filesystem::path &file)
 			{ channel->UploadFile(path, file); });
 	}
 }
@@ -5911,7 +5881,7 @@ void MTerminalView::SetHyperLink(const std::string &inURI)
 	}
 }
 
-void MTerminalView::LinkClicked(std::string inLink)
+void MTerminalView::LinkClicked(const std::string &inLink)
 {
 	try
 	{
@@ -5942,7 +5912,7 @@ void MTerminalView::LinkClicked(std::string inLink)
 	}
 }
 
-void MTerminalView::OnIOStatus(std::string inMessage)
+void MTerminalView::OnIOStatus(const std::string &inMessage)
 {
 	PRINT_THREAD_ID;
 

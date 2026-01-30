@@ -29,8 +29,8 @@
 
 #pragma once
 
-#include "MCommand.hpp"
-#include "MWindow.hpp"
+#include <MCommand.hpp>
+#include <MWindow.hpp>
 
 #include <pinch.hpp>
 
@@ -52,7 +52,6 @@ class MTerminalWindow : public MWindow
 
 	virtual MTerminalWindow *Clone(MTerminalWindow *inOriginal) = 0;
 
-	void ShowSelf() override;
 	void FocusTerminalView();
 
 	static MTerminalWindow *GetFirstTerminal() { return sFirst; }
@@ -67,13 +66,15 @@ class MTerminalWindow : public MWindow
 
 	void SetTitle(const std::string &inTitle) override;
 
-	uint32_t GetTerminalNr() const
+	[[nodiscard]] uint32_t GetTerminalNr() const
 	{
 		return mNr;
 	}
 
   protected:
 	MTerminalWindow(MTerminalChannel *inChannel, const std::vector<std::string> &inArgv);
+
+	void ShowSelf() override;
 
 	void ShowSearchPanel();
 	void HideSearchPanel();
@@ -104,7 +105,7 @@ class MTerminalWindow : public MWindow
 	std::shared_ptr<MTerminalView> mTerminalView;
 
 	static MTerminalWindow *sFirst;
-	MTerminalWindow *mNext;
+	MTerminalWindow *mNext = nullptr;
 
 	uint32_t mNr;
 	static uint32_t sNextNr;

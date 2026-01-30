@@ -25,27 +25,29 @@
  */
 
 #include "MHTTPProxy.hpp"
-#include "MPreferences.hpp"
 #include "MSaltApp.hpp"
 
+#include <MPreferences.hpp>
+
+#include <memory>
 #include <pinch.hpp>
 
 #include <fstream>
 
-#include <zeep/http/server.hpp>
-#include <zeep/http/security.hpp>
-#include <zeep/http/html-controller.hpp>
-#include <zeep/http/request.hpp>
-#include <zeep/http/reply.hpp>
-#include <zeep/http/message-parser.hpp>
-#include <zeep/uri.hpp>
+#include <utility>
 #include <zeep/http/error-handler.hpp>
+#include <zeep/http/html-controller.hpp>
+#include <zeep/http/message-parser.hpp>
+#include <zeep/http/reply.hpp>
+#include <zeep/http/request.hpp>
+#include <zeep/http/security.hpp>
+#include <zeep/http/server.hpp>
+#include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
 
 using tcp = asio_ns::ip::tcp;
 namespace zh = zeep::http;
-namespace fs = std::filesystem;
 
 // --------------------------------------------------------------------
 
@@ -86,16 +88,12 @@ class proxy_controller : public zeep::http::html_controller_v1
 {
   public:
 	proxy_controller(std::shared_ptr<pinch::basic_connection> ssh_connection, MHTTPProxyImpl &proxy)
-		: m_connection(ssh_connection)
+		: m_connection(std::move(ssh_connection))
 		, m_proxy(proxy)
 	{
 		mount_get("status", &proxy_controller::handle_status);
 		// mount_get("css/", &proxy_controller::handle_file);
 		map_get_file("css/");
-	}
-
-	~proxy_controller()
-	{
 	}
 
 	bool dispatch_request(tcp::socket &socket, zh::request &req, zh::reply &reply) override
@@ -128,7 +126,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 		++m_request_count;
 
 		if (zeep::uri(req.get_uri()).get_host() == "proxy.hekkelman.net")
-			result = zh::html_controller::handle_request(req, reply);
+			result = html_controller::handle_request(req, reply);
 		else if (req.get_method() == "CONNECT")
 			asio_ns::co_spawn(
 				m_connection->get_executor(), [this, req]()
@@ -145,7 +143,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 
 	struct open_channel_counter
 	{
-		open_channel_counter(std::atomic<uint32_t> &cnt)
+		explicit open_channel_counter(std::atomic<uint32_t> &cnt)
 			: m_cnt(cnt)
 		{
 			++m_cnt;
@@ -167,7 +165,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 
 		connect_copy(tcp::socket &&socket, std::shared_ptr<pinch::forwarding_channel> channel, std::atomic<uint32_t> &cnt)
 			: socket(std::forward<tcp::socket>(socket))
-			, channel(channel)
+			, channel(std::move(channel))
 			, cnt(cnt)
 		{
 		}
@@ -265,7 +263,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 
 			++m_request_count;
 
-			std::string host = uri.get_host();
+			auto &host = uri.get_host();
 			uint16_t port = uri.get_port();
 
 			if (port == 0)
@@ -274,7 +272,7 @@ class proxy_controller : public zeep::http::html_controller_v1
 			// m_proxy.validate(m_request);
 
 			if (not(channel and channel->forwards_to(host, port)))
-				channel.reset(new pinch::forwarding_channel(m_connection, host, port));
+				channel = std::make_shared<pinch::forwarding_channel>(m_connection, host, port);
 
 			if (not channel->is_open())
 			{
@@ -342,10 +340,10 @@ class http_proxy_error_handler : public zeep::http::error_handler
 	{
 	}
 
-	virtual bool create_error_reply(const zeep::http::request &req, std::exception_ptr eptr, zeep::http::reply &reply);
+	bool create_error_reply(const zeep::http::request &req, const std::exception_ptr &eptr, zeep::http::reply &reply) override;
 };
 
-bool http_proxy_error_handler::create_error_reply(const zeep::http::request &req, std::exception_ptr eptr, zeep::http::reply &reply)
+bool http_proxy_error_handler::create_error_reply(const zeep::http::request &req, const std::exception_ptr &eptr, zeep::http::reply &reply)
 {
 	bool result = false;
 
@@ -384,13 +382,14 @@ class MHTTPServer : public zeep::http::basic_server
 		return m_io_context;
 	}
 
+  protected:
 	void log_request(std::string_view client,
 		const zeep::http::request &req, const zeep::http::reply &rep,
 		std::chrono::system_clock::time_point start,
 		std::string_view referer, std::string_view userAgent,
 		std::string_view entry) noexcept override
 	{
-		m_proxy.log_request(std::string { client }, req, req.get_request_line(), rep);
+		m_proxy.log_request(std::string{ client }, req, req.get_request_line(), rep);
 	}
 
   private:
@@ -403,8 +402,7 @@ class MHTTPServer : public zeep::http::basic_server
 MHTTPProxyImpl::MHTTPProxyImpl(std::shared_ptr<pinch::basic_connection> inConnection, uint16_t inPort,
 	bool require_authentication, const std::string &user, const std::string &password, log_level log)
 	: m_user_service({ { user, password, { "PROXY_USER" } } })
-	, m_connection(inConnection)
-	, m_log_level(log_level::none)
+	, m_connection(std::move(inConnection))
 {
 #if NDEBUG
 	set_log_level(log);
@@ -419,7 +417,7 @@ MHTTPProxyImpl::MHTTPProxyImpl(std::shared_ptr<pinch::basic_connection> inConnec
 	// sc->add_rule("/", {});
 
 	// m_server.reset(new MHTTPServer(gApp->get_io_context(), sc));
-	m_server.reset(new MHTTPServer(*this, MSaltApp::Instance().get_io_context(), nullptr));
+	m_server = std::make_unique<MHTTPServer>(*this, MSaltApp::Instance().get_io_context(), nullptr);
 
 	m_server->set_allowed_methods({ "GET", "POST", "PUT", "OPTIONS", "HEAD", "DELETE", "CONNECT" });
 
@@ -444,7 +442,7 @@ void MHTTPProxyImpl::set_log_level(log_level level)
 	m_log_level = level;
 
 	if (level > log_level::none)
-		m_log.reset(new std::ofstream(gPrefsDir / "proxy.log", std::ios::app));
+		m_log = std::make_unique<std::ofstream>(gPrefsDir / "proxy.log", std::ios::app);
 	else
 		m_log.reset(nullptr);
 }
@@ -510,10 +508,7 @@ void MHTTPProxyImpl::log_error(const std::error_code &ec)
 
 // --------------------------------------------------------------------
 
-MHTTPProxy::MHTTPProxy()
-	: m_impl(nullptr)
-{
-}
+MHTTPProxy::MHTTPProxy() = default;
 
 MHTTPProxy::~MHTTPProxy()
 {
@@ -535,5 +530,5 @@ void MHTTPProxy::Init(std::shared_ptr<pinch::basic_connection> inConnection,
 	auto user = MPrefs::GetString("http-proxy-user", "");
 	auto password = MPrefs::GetString("http-proxy-password", "");
 
-	m_impl = new MHTTPProxyImpl(inConnection, inPort, require_authentication, user, password, log);
+	m_impl = new MHTTPProxyImpl(std::move(inConnection), inPort, require_authentication, user, password, log);
 }

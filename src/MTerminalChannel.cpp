@@ -28,10 +28,12 @@
 // All rights reserved
 
 #include "MTerminalChannel.hpp"
-#include "MAlerts.hpp"
 #include "MSaltApp.hpp"
-#include "MStrings.hpp"
 
+#include <MAlerts.hpp>
+#include <MStrings.hpp>
+
+#include <algorithm>
 #include <asio/experimental/awaitable_operators.hpp>
 #include <pinch.hpp>
 
@@ -71,7 +73,7 @@ void MTerminalChannel::Disconnect(bool disconnectProxy)
 class MSshTerminalChannel : public MTerminalChannel
 {
   public:
-	explicit MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection);
+	explicit MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection);
 	~MSshTerminalChannel() override;
 
 	void SetMessageCallback(const MessageCallback &inMessageCallback) override;
@@ -110,10 +112,10 @@ class MSshTerminalChannel : public MTerminalChannel
 	asio_ns::streambuf mResponse;
 };
 
-MSshTerminalChannel::MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection)
-	: mChannel(new pinch::terminal_channel(inConnection))
+MSshTerminalChannel::MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection)
+	: mChannel(new pinch::terminal_channel(std::move(inConnection)))
 {
-	inConnection->keep_alive();
+	mChannel->get_connection().keep_alive();
 }
 
 MSshTerminalChannel::~MSshTerminalChannel() = default;
@@ -163,7 +165,7 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 				connection.get_connection_parameters(pinch::direction::s2c),
 				connection.get_key_exchange_algorithm() });
 
-			mConnectionInfo.erase(unique(mConnectionInfo.begin(), mConnectionInfo.end()), mConnectionInfo.end());
+			mConnectionInfo.erase(std::ranges::unique(mConnectionInfo).begin(), mConnectionInfo.end());
 
 			if (this->mRefCount > 0)
 				inOpenCallback(ec);

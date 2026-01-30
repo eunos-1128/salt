@@ -29,8 +29,8 @@
 
 #pragma once
 
-#include "MControls.hpp"
-#include "MP2PEvents.hpp"
+#include <MControls.hpp>
+#include <MP2PEvents.hpp>
 
 const uint32_t
 	kSearchPanelHeight = 28,
@@ -47,15 +47,15 @@ class MSearchPanel : public MBoxControl
   public:
 	MSearchPanel(const std::string &inID, MRect inBounds);
 
-	virtual ~MSearchPanel();
+	~MSearchPanel() override;
 
-	std::string GetSearchString() const;
-	bool GetIgnoreCase() const;
+	[[nodiscard]] std::string GetSearchString() const;
+	[[nodiscard]] bool GetIgnoreCase() const;
 
-	uint32_t GetHeight() const;
+	[[nodiscard]] uint32_t GetHeight() const;
 
 	MEventOut<void(MSearchDirection)> eSearch;
-	MEdittext *GetTextBox() const { return mTextBox; }
+	[[nodiscard]] MEdittext *GetTextBox() const { return mTextBox; }
 
 	void SetFocus() override;
 
@@ -63,11 +63,11 @@ class MSearchPanel : public MBoxControl
 	void Close();
 
 	MEventIn<void(const std::string &)> eFindBtn;
-	void FindBtn(const std::string &);
+	void FindBtn(const std::string &inFind);
 
 	MEventIn<void(uint32_t inKeyCode, uint32_t inModifiers)> eKeyDown;
 	void KeyDown(uint32_t inKeyCode, uint32_t inModifiers);
 
-	MEdittext *mTextBox;
+	MEdittext *mTextBox = nullptr;
 	MCheckbox *mCaseSensitive;
 };

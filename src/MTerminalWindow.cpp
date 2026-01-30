@@ -28,28 +28,26 @@
 // All rights reserved
 
 #include "MTerminalWindow.hpp"
-#include "MAlerts.hpp"
-#include "MAnimation.hpp"
 #include "MAuthDialog.hpp"
-#include "MClipboard.hpp"
-#include "MControls.hpp"
-#include "MMenu.hpp"
 #include "MPortForwardingDialog.hpp"
-#include "MPreferences.hpp"
-#include "MPtyTerminalChannel.hpp"
 #include "MSaltApp.hpp"
 #include "MSearchPanel.hpp"
-#include "MStrings.hpp"
 #include "MTerminalChannel.hpp"
 #include "MTerminalView.hpp"
 
-#include "MSalt.hpp"
+#include <MAlerts.hpp>
+#include <MAnimation.hpp>
+#include <MClipboard.hpp>
+#include <MControls.hpp>
+#include <MMenu.hpp>
+#include <MPreferences.hpp>
+#include <MStrings.hpp>
 
 #include <memory>
-#include <zeep/crypto.hpp>
-
 #include <source_location>
 #include <thread>
+#include <utility>
+#include <zeep/crypto.hpp>
 
 // --------------------------------------------------------------------
 
@@ -58,7 +56,7 @@
 char this_thread_name()
 {
 	static std::mutex m_mutex;
-	std::lock_guard lock(m_mutex);
+	std::scoped_lock lock(m_mutex);
 
 	static std::map<std::thread::id, char> m_names;
 
@@ -89,10 +87,10 @@ char this_thread_name()
 class MSshTerminalWindow : public MTerminalWindow
 {
   public:
-	MSshTerminalWindow(const std::string &inUser, const std::string &inHost, uint16_t inPort,
-		std::shared_ptr<pinch::basic_connection> inConnection, std::vector<std::string> inArgv);
+	MSshTerminalWindow(std::string inUser, std::string inHost, uint16_t inPort,
+		std::shared_ptr<pinch::basic_connection> inConnection, const std::vector<std::string>& inArgv);
 
-	MTerminalWindow *Clone(MTerminalWindow *) override
+	MTerminalWindow *Clone(MTerminalWindow * /*inOriginal*/) override
 	{
 		return new MSshTerminalWindow(mUser, mServer, mPort, mConnection, mArgv);
 	}
@@ -129,8 +127,8 @@ class MSshTerminalWindow : public MTerminalWindow
 	pinch::channel_ptr mKeyDropper;
 };
 
-MSshTerminalWindow::MSshTerminalWindow(const std::string &inUser, const std::string &inHost, uint16_t inPort,
-	std::shared_ptr<pinch::basic_connection> inConnection, std::vector<std::string> inArgv)
+MSshTerminalWindow::MSshTerminalWindow(std::string inUser, std::string inHost, uint16_t inPort,
+	std::shared_ptr<pinch::basic_connection> inConnection, const std::vector<std::string>& inArgv)
 	: MTerminalWindow(MTerminalChannel::Create(inConnection), inArgv)
 
 	, cDisconnect(this, "disconnect", &MSshTerminalWindow::OnDisconnect)
@@ -141,9 +139,9 @@ MSshTerminalWindow::MSshTerminalWindow(const std::string &inUser, const std::str
 	, cProxySOCKS(this, "proxy-socks", &MSshTerminalWindow::OnProxySOCKS)
 	, cProxyHTTP(this, "proxy-http", &MSshTerminalWindow::OnProxyHTTP)
 
-	, mConnection(inConnection)
-	, mUser(inUser)
-	, mServer(inHost)
+	, mConnection(std::move(inConnection))
+	, mUser(std::move(inUser))
+	, mServer(std::move(inHost))
 	, mPort(inPort)
 	, mArgv(inArgv)
 {
@@ -194,14 +192,14 @@ void MSshTerminalWindow::OnInstallPublicKey(int inKeyNr)
 
 	MAppExecutor my_executor{ &MSaltApp::Instance().get_context() };
 
-	mKeyDropper.reset(new pinch::exec_channel(
+	mKeyDropper = std::make_shared<pinch::exec_channel>(
 		mConnection, command, [this, comment](const std::string &, int status)
 		{
 		if (status == 0)
 			DisplayAlert(this, "installed-public-key", {comment, this->mServer});
 		else
 			DisplayAlert(this, "failed-to-install-public-key", {comment, this->mServer}); },
-		my_executor));
+		my_executor);
 
 	mKeyDropper->open();
 }
@@ -228,12 +226,8 @@ void MSshTerminalWindow::AcceptsHostKey(const std::string &host, const std::stri
 
 	std::string_view hsv(reinterpret_cast<const char *>(key.data()), key.size());
 
-	std::string value = zeep::encode_base64(hsv);
-	std::string H = zeep::md5(hsv);
-
 	std::string fingerprint;
-
-	for (auto b : H)
+	for (auto b : zeep::md5(hsv))
 	{
 		if (not fingerprint.empty())
 			fingerprint += ':';
@@ -301,11 +295,11 @@ class MPtyTerminalWindow : public MTerminalWindow
 {
   public:
 	MPtyTerminalWindow(const std::filesystem::path &inCwd, const std::vector<std::string> &inArgv);
-	MPtyTerminalWindow(MPtyTerminalWindow *inOriginal = nullptr);
+	explicit MPtyTerminalWindow(MPtyTerminalWindow *inOriginal = nullptr);
 
-	MTerminalWindow *Clone(MTerminalWindow *inOriginal)
+	MTerminalWindow *Clone(MTerminalWindow *inOriginal) override
 	{
-		MPtyTerminalWindow *parent = dynamic_cast<MPtyTerminalWindow *>(inOriginal);
+		auto *parent = dynamic_cast<MPtyTerminalWindow *>(inOriginal);
 		return new MPtyTerminalWindow(parent);
 	}
 };
@@ -344,7 +338,6 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	, cShowStatusbar(this, "show-statusbar", &MTerminalWindow::OnShowStatusbar)
 
 	, mChannel(inTerminalChannel)
-	, mNext(nullptr)
 	, mNr(sNextNr++)
 {
 	SetIconName("salt");
@@ -370,7 +363,7 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	bounds.y += bounds.height - kScrollbarWidth;
 	bounds.height = kScrollbarWidth;
 
-	MStatusBarElement parts[] = {
+	MStatusbar::Element parts[] = {
 		{ 250, { 4, 0, 4, 0 }, false },
 		{ 275, { 4, 0, 4, 0 }, true },
 		{ 60, { 4, 0, 4, 0 }, false },
@@ -384,7 +377,7 @@ MTerminalWindow::MTerminalWindow(MTerminalChannel *inTerminalChannel, const std:
 	int32_t statusbarHeight = bounds.height;
 
 	// hbox: force correct autolayout in Gtk
-	MBoxControl *hbox = new MBoxControl("hbox", bounds, true);
+	auto *hbox = new MBoxControl("hbox", bounds, true);
 	hbox->SetLayout({ true, 0 });
 	mMainVBox->AddChild(hbox, mStatusbar);
 
@@ -538,7 +531,7 @@ void MTerminalWindow::OnShowStatusbar(bool inShow)
 	if (inShow)
 		mStatusbar->Show();
 	else
-	 	mStatusbar->Hide();
+		mStatusbar->Hide();
 }
 
 void MTerminalWindow::ShowSearchPanel()
@@ -601,6 +594,6 @@ MTerminalWindow *MTerminalWindow::Create(const std::string &inUser, const std::s
 	const std::string &inSSHCommand, std::shared_ptr<pinch::basic_connection> inConnection)
 {
 	return inSSHCommand.empty()
-	           ? new MSshTerminalWindow(inUser, inHost, inPort, inConnection, {})
-	           : new MSshTerminalWindow(inUser, inHost, inPort, inConnection, { inSSHCommand });
+	           ? new MSshTerminalWindow(inUser, inHost, inPort, std::move(inConnection), {})
+	           : new MSshTerminalWindow(inUser, inHost, inPort, std::move(inConnection), { inSSHCommand });
 }

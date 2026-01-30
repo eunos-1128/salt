@@ -47,7 +47,7 @@ class MAuthDialog : public MDialog
 	MAuthDialog(const std::string &inTitle, const std::string &name, const std::string &inInstruction,
 		const std::vector<pinch::prompt> &prompts, MWindow *inParent, std::promise<std::vector<std::string>> inReply);
 
-	virtual ~MAuthDialog();
+	~MAuthDialog() override;
 
 	static void RequestSimplePassword(
 		const std::string &inDialogTitle,
@@ -57,7 +57,7 @@ class MAuthDialog : public MDialog
 
   protected:
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 
 	int32_t mFields = -1;
 	MWindow *mParent;

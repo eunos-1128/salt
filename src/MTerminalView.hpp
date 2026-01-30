@@ -29,14 +29,15 @@
 
 #pragma once
 
-#include "MCanvas.hpp"
-#include "MColor.hpp"
-#include "MCommand.hpp"
-#include "MP2PEvents.hpp"
 #include "MSearchPanel.hpp"
 #include "MTerminalBuffer.hpp"
 #include "MTerminalChannel.hpp"
-#include "MUnicode.hpp"
+
+#include <MCanvas.hpp>
+#include <MColor.hpp>
+#include <MCommand.hpp>
+#include <MP2PEvents.hpp>
+#include <MUnicode.hpp>
 
 #include <pinch.hpp>
 
@@ -145,8 +146,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void PreviewColors(MColor inBackColor, MColor inSelectionColor);
 
 	MEventIn<void(uint32_t, MRect)> eStatusPartClicked;
-	void StatusPartClicked(uint32_t inNr, MRect);
-	uint32_t mStatusInfo;
+	void StatusPartClicked(uint32_t inNr, MRect r);
+	uint32_t mStatusInfo{};
 
 	MStatusbar *mStatusbar;
 	MScrollbar *mScrollbar;
@@ -154,7 +155,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	MTerminalChannel *mTerminalChannel;
 	std::vector<std::string> mArgv;
-	int32_t mTerminalWidth, mTerminalHeight;
+	int32_t mTerminalWidth{}, mTerminalHeight{};
 
 	MTerminalBuffer mScreenBuffer, mAlternateBuffer, mStatusLineBuffer;
 	MTerminalBuffer *mBuffer;
@@ -353,8 +354,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	// VT220 support
 	bool mS8C1T;
-	struct MPFK *mPFK; // device control strings
-	struct MPFK *mNewPFK;
+	struct MPFK *mPFK = nullptr; // device control strings
+	struct MPFK *mNewPFK= nullptr;
 	bool mUDKWithShift;
 
 	// handling of escape sequences
@@ -378,7 +379,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 		eVT52_LINE,
 		eVT52_COLUMN
-	} mEscState;
+	} mEscState = eESC_NONE;
 
 	int mState;
 	std::vector<uint32_t> mArgs;
@@ -419,8 +420,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void Animate();
 
 	// status line
-	bool mDECSASD;
-	int mDECSSDT;
+	bool mDECSASD = false;
+	int mDECSSDT = false;
 
 	// rectangle extend
 	bool mDECSACE;
@@ -438,8 +439,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	std::string ProcessKeyANSI(uint32_t inKeyCode, uint32_t inModifiers);
 	std::string ProcessKeyXTerm(uint32_t inKeyCode, uint32_t inModifiers);
 
-	MAnimationManager *mAnimationManager;
-	MAnimationVariable *mGraphicalBeep;
+	MAnimationManager *mAnimationManager = nullptr;
+	MAnimationVariable *mGraphicalBeep = nullptr;
 	bool mAudibleBeep;
 	MAnimationVariable *mDisabledFactor;
 	bool mIgnoreColors;
@@ -473,7 +474,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 		if (inSet)
 			mMouseTracking |= static_cast<int>(flag);
 		else
-		 	mMouseTracking &= ~static_cast<int>(flag);
+			mMouseTracking &= ~static_cast<int>(flag);
 	}
 
 	int32_t mMouseTrackX, mMouseTrackY, mMouseTrackBtn = 0;
@@ -483,9 +484,9 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	int mHyperLink = 0, mCurrentLink = 0, mAnchorLink = 0;
 	void SetHyperLink(const std::string &inURI);
 
-	void LinkClicked(std::string inLink);
+	void LinkClicked(const std::string &inLink);
 
-	void OnIOStatus(std::string inMessage);
+	void OnIOStatus(const std::string &inMessage);
 	MEventIn<void(std::string)> eIOStatus;
 
 	bool mDragWithin = false;

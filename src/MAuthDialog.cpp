@@ -30,10 +30,11 @@
 */
 
 #include "MAuthDialog.hpp"
-#include "MAlerts.hpp"
-#include "MStrings.hpp"
-#include "MSaltApp.hpp"
 
+#include <MAlerts.hpp>
+#include <MStrings.hpp>
+
+#include <exception>
 #include <pinch.hpp>
 
 #include <cmath>
@@ -78,7 +79,7 @@ MAuthDialog::MAuthDialog(const std::string &inTitle, const std::string &name, co
 	SetText("instruction", inInstruction);
 
 	int32_t id = 1;
-	for (auto prompt : prompts)
+	for (const auto &prompt : prompts)
 	{
 		SetVisible("label-" + std::to_string(id), true);
 		SetVisible("edit-" + std::to_string(id), true);
@@ -102,10 +103,16 @@ MAuthDialog::MAuthDialog(const std::string &inTitle, const std::string &name, co
 
 MAuthDialog::~MAuthDialog()
 {
-	if (mPasswordReply.has_value())
-		mPasswordReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
-	if (mCredentialsReply.has_value())
-		mCredentialsReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
+	try
+	{
+		if (mPasswordReply.has_value())
+			mPasswordReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
+		if (mCredentialsReply.has_value())
+			mCredentialsReply.value().set_exception(std::make_exception_ptr(make_error_code(pinch::error::auth_cancelled_by_user)));
+	}
+	catch (const std::exception &ex)
+	{
+	}
 }
 
 bool MAuthDialog::OKClicked()
@@ -136,13 +143,10 @@ void MAuthDialog::RequestSimplePassword(
 	std::promise<std::string> promise;
 	std::future<std::string> result = promise.get_future();
 
-	auto a = std::async(std::launch::async, [f = std::move(result), cb = std::move(inReplyCallback)]() mutable
-	{
-		f.wait();
-		cb(f.get());
-	});
+	(void)std::async(std::launch::async,
+		[f = std::move(result), cb = std::move(inReplyCallback)]() mutable
+		{ f.wait(); cb(f.get()); });
 
-	auto dlog = new MAuthDialog(inDialogTitle/* , inInstruction */, inParent, std::move(promise));
-	// dlog->SetModal(true);
+	auto dlog = new MAuthDialog(inDialogTitle /* , inInstruction */, inParent, std::move(promise));
 	dlog->Show();
 }

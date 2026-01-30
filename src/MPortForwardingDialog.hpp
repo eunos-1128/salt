@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MDialog.hpp"
+#include <MDialog.hpp>
 
 #include <pinch.hpp>
 
@@ -39,9 +39,9 @@ class MPortForwardingDialog : public MDialog
 {
   public:
 	MPortForwardingDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection);
-	~MPortForwardingDialog();
+	~MPortForwardingDialog() override;
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 
   private:
 	std::shared_ptr<pinch::basic_connection> mConnection;
@@ -51,9 +51,9 @@ class MSOCKS5ProxyDialog : public MDialog
 {
   public:
 	MSOCKS5ProxyDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection);
-	~MSOCKS5ProxyDialog();
+	~MSOCKS5ProxyDialog() override;
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 
   private:
 	std::shared_ptr<pinch::basic_connection> mConnection;
@@ -63,10 +63,10 @@ class MHTTPProxyDialog : public MDialog
 {
   public:
 	MHTTPProxyDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection);
-	~MHTTPProxyDialog();
+	~MHTTPProxyDialog() override;
 
-	virtual bool OKClicked();
-	virtual void TextChanged(const std::string &inID, const std::string &inValue);
+	bool OKClicked() override;
+	void TextChanged(const std::string &inID, const std::string &inValue) override;
 
   private:
 	std::shared_ptr<pinch::basic_connection> mConnection;

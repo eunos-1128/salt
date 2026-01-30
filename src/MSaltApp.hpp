@@ -29,10 +29,11 @@
 
 #pragma once
 
-#include "MApplication.hpp"
-#include "MCommand.hpp"
+#include <MApplication.hpp>
+#include <MCommand.hpp>
+#include <MTypes.hpp>
+
 #include "MConnectDialog.hpp"
-#include "MTypes.hpp"
 
 #include <pinch.hpp>
 

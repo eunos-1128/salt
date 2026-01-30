@@ -56,5 +56,5 @@ class MHTTPProxy
   private:
 	MHTTPProxy();
 
-	struct MHTTPProxyImpl *m_impl;
+	struct MHTTPProxyImpl *m_impl = nullptr;
 };

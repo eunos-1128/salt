@@ -396,6 +396,11 @@
 		<value>Gebruik huidige werk map, indien bekend (zie documentatie)</value>
 	</localstring>
 
+	<localstring context="prefs-dialog">
+		<key>Control+Right click for context menu</key>
+		<value>Cntrl+rechter muisknop voor context menu</value>
+	</localstring>
+	
 	<localstring context="tunnel-dialog">
 		<key>Please enter the port numbers for the tunnel</key>
 		<value>Vul de poortnummmers voor de tunnel in</value>

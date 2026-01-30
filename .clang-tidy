@@ -44,6 +44,8 @@ ExcludeHeaderFilterRegex: 'cryptopp/.*'
 
 CheckOptions:
   - key: performance-unnecessary-value-param.AllowedTypes
-    value: std::shared_ptr<.*>;pinch::channel_ptr;std::shared_ptr<.*connection>
+    value: std::shared_ptr<pinch::basic_connection>
   - key: bugprone-narrowing-conversions.WarnOnIntegerNarrowingConversion
     value: false
+  - key: misc-override-with-different-visibility.DisallowedVisibilityChange
+    value: widening

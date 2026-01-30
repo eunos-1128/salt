@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MColor.hpp"
+#include <MColor.hpp>
 
 extern const MColor k256AnsiColors[256];
 

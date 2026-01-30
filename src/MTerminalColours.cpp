@@ -27,14 +27,12 @@
 // Copyright Maarten L. Hekkelman 2017
 // All rights reserved
 
-#include "MSalt.hpp"
-
 #include "MTerminalColours.hpp"
 
 #include <cmath>
 #include <cstdint>
 
-constexpr uint8_t operator ""_u8 (unsigned long long i) { return static_cast<uint8_t>(i); }
+constexpr uint8_t operator ""_u8 (unsigned long long i) noexcept { return static_cast<uint8_t>(i); }
 
 const MColor k256AnsiColors[256] = {
 

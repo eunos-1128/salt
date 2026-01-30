@@ -28,18 +28,17 @@
 // All rights reserved
 
 #include "MPreferencesDialog.hpp"
-#include "MAlerts.hpp"
-#include "MColorPicker.hpp"
-#include "MControls.hpp"
-#include "MDevice.hpp"
-#include "MFile.hpp"
-#include "MPreferences.hpp"
-#include "MSaltApp.hpp"
-#include "MTerminalWindow.hpp"
-#include "MUnicode.hpp"
-#include "MUtils.hpp"
 
-#include <iomanip>
+#include <MAlerts.hpp>
+#include <MColorPicker.hpp>
+#include <MControls.hpp>
+#include <MDevice.hpp>
+#include <MFile.hpp>
+#include <MPreferences.hpp>
+#include <MUnicode.hpp>
+#include <MUtils.hpp>
+
+#include <algorithm>
 #include <pinch.hpp>
 
 #include <charconv>
@@ -67,7 +66,7 @@ MPreferencesDialog::MPreferencesDialog()
 {
 	vector<string> fonts;
 	MDevice::ListFonts(true, fonts);
-	sort(fonts.begin(), fonts.end());
+	std::ranges::sort(fonts);
 
 	SetChoices("font", fonts);
 
@@ -312,19 +311,19 @@ void MPreferencesDialog::Apply()
 		{ pinch::algorithm::compression, "cmp", "compression", pinch::kCompressionAlgorithms }
 	};
 
-	for (auto alg : kAlgs)
+	for (const auto& alg : kAlgs)
 	{
 		bool ok = true;
 
 		auto requested = Split<std::string>(GetText(alg.conf), ",", true);
 		auto standard = Split(alg.def, ",", true);
 
-		requested.erase(std::unique(requested.begin(), requested.end()), requested.end());
+		requested.erase(std::ranges::unique(requested).begin(), requested.end());
 
 		for (auto &a : requested)
 		{
 			Trim(a);
-			if (std::find(standard.begin(), standard.end(), a) == standard.end())
+			if (std::ranges::find(standard, a) == standard.end())
 			{
 				DisplayAlert(this, "algo-unsupported", { alg.desc, a });
 				ok = false;
@@ -368,7 +367,7 @@ void MPreferencesDialog::ButtonClicked(const string &inID)
 	}
 	else if (inID == "browse-download-dir")
 	{
-		MFileDialogs::ChooseDirectory(this, [this](bool ok, std::filesystem::path dir)
+		MFileDialogs::ChooseDirectory(this, [this](bool ok, const std::filesystem::path& dir)
 		{
 			if (ok)
 				SetText("download-dir", dir.string());

@@ -29,13 +29,14 @@
 
 #pragma once
 
-#include "MColor.hpp"
-#include "MTypes.hpp"
+#include <MColor.hpp>
+#include <MTypes.hpp>
 
 #include <cassert>
 #include <deque>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 // --------------------------------------------------------------------
@@ -116,7 +117,7 @@ class MChar
 		return *this;
 	}
 
-	constexpr char32_t GetUnicode() const
+	[[nodiscard]] constexpr char32_t GetUnicode() const
 	{
 		return mUnicode & 0x1FFFFF;
 	}
@@ -126,7 +127,7 @@ class MChar
 		mUnicode = inUnicode & 0x1FFFFF;
 	}
 
-	constexpr int GetStyle() const
+	[[nodiscard]] constexpr int GetStyle() const
 	{
 		return mStyle & 0x01FF;
 	}
@@ -189,7 +190,7 @@ class MChar
 			mStyle &= ~kHasFgColor;
 	}
 
-	std::optional<MColor> GetForeColor() const
+	[[nodiscard]] std::optional<MColor> GetForeColor() const
 	{
 		if (mStyle & kHasFgColor)
 			return std::make_optional<MColor>(mForeGroundColor[0], mForeGroundColor[1], mForeGroundColor[2]);
@@ -209,14 +210,14 @@ class MChar
 			mStyle &= ~kHasBgColor;
 	}
 
-	std::optional<MColor> GetBackColor() const
+	[[nodiscard]] std::optional<MColor> GetBackColor() const
 	{
 		if (mStyle & kHasBgColor)
 			return std::make_optional<MColor>(mBackGroundColor[0], mBackGroundColor[1], mBackGroundColor[2]);
 		return {};
 	}
 
-	bool IsTab() const { return mUnicode == ' ' and mIsTab; }
+	[[nodiscard]] bool IsTab() const { return mUnicode == ' ' and mIsTab; }
 	void SetTab(bool inIsTab)
 	{
 		assert(mUnicode == ' ');
@@ -228,7 +229,7 @@ class MChar
 		mHyperLink = inLinkNr;
 	}
 
-	uint16_t GetHyperLink() const
+	[[nodiscard]] uint16_t GetHyperLink() const
 	{
 		return mHyperLink;
 	}
@@ -236,7 +237,7 @@ class MChar
 	/// \brief support for structured binding
 	/// 0 is unicode, 1 is style, 2 is forecolor, 3 is backcolor
 	template <std::size_t N>
-	decltype(auto) get() const
+	[[nodiscard]] decltype(auto) get() const
 	{
 		if constexpr (N == 0)
 			return GetUnicode();
@@ -294,7 +295,7 @@ struct tuple_element<Ix, MChar>
 class MLine
 {
   public:
-	MLine(uint32_t inSize, std::optional<MColor> inForeColor = {}, std::optional<MColor> inBackColor = {});
+	explicit MLine(uint32_t inSize, std::optional<MColor> inForeColor = {}, std::optional<MColor> inBackColor = {});
 
 	MLine(const MLine &rhs);
 
@@ -327,12 +328,12 @@ class MLine
 
 	friend void swap(MLine &lhs, MLine &rhs) noexcept;
 
-	bool IsSoftWrapped() const { return mSoftWrapped; }
+	[[nodiscard]] bool IsSoftWrapped() const { return mSoftWrapped; }
 	void SetSoftWrapped(bool inSoftWrapped) { mSoftWrapped = inSoftWrapped; }
 
-	bool IsDoubleWidth() const { return mDoubleWidth; }
-	bool IsDoubleHeight() const { return mDoubleHeight; }
-	bool IsDoubleHeightTop() const { return mDoubleHeightTop; }
+	[[nodiscard]] bool IsDoubleWidth() const { return mDoubleWidth; }
+	[[nodiscard]] bool IsDoubleHeight() const { return mDoubleHeight; }
+	[[nodiscard]] bool IsDoubleHeightTop() const { return mDoubleHeightTop; }
 
 	void SetDoubleWidth()
 	{
@@ -357,7 +358,7 @@ class MLine
 		using reference = value_type &;
 		using difference_type = std::ptrdiff_t;
 
-		iterator(MChar *inPtr)
+		explicit iterator(MChar *inPtr)
 			: mPtr(inPtr)
 		{
 		}
@@ -398,7 +399,7 @@ class MLine
 
 	iterator begin() { return iterator(mCharacters); }
 	iterator end() { return iterator(mCharacters + mSize); }
-	std::size_t size() const { return mSize; }
+	[[nodiscard]] std::size_t size() const { return mSize; }
 
   private:
 	MChar *mCharacters = nullptr;
@@ -423,7 +424,7 @@ class MTerminalBuffer
 
 	void SetBufferSize(uint32_t inBufferSize) { mBufferSize = inBufferSize; }
 
-	const MLine &GetLine(int32_t inLine) const;
+	[[nodiscard]] const MLine &GetLine(int32_t inLine) const;
 
 	// anchor line is recalculated in Resize to help to
 	// adjust scrollbar.
@@ -440,14 +441,14 @@ class MTerminalBuffer
 	{
 		for (int32_t li = inFromLine; li <= inToLine; ++li)
 		{
-			if (li >= static_cast<int32_t>(mLines.size()))
+			if (std::cmp_greater_equal(li, mLines.size()))
 				break;
 
 			MLine &line(mLines[li]);
 
 			for (int32_t ci = inFromColumn; ci <= inToColumn; ++ci)
 			{
-				if (ci >= static_cast<int32_t>(mWidth))
+				if (std::cmp_greater_equal(ci, mWidth))
 					break;
 
 				inHandler(line[ci], li, ci);
@@ -482,10 +483,10 @@ class MTerminalBuffer
 	void FillWithE(); // for DECALN
 
 	void SetDirty(bool inDirty);
-	bool IsDirty() const { return mDirty; }
+	[[nodiscard]] bool IsDirty() const { return mDirty; }
 
-	bool IsSelectionEmpty() const;
-	bool IsSelectionBlock() const;
+	[[nodiscard]] bool IsSelectionEmpty() const;
+	[[nodiscard]] bool IsSelectionBlock() const;
 
 	void GetSelectionBegin(int32_t &outLine, int32_t &outColumn) const;
 	void GetSelectionEnd(int32_t &outLine, int32_t &outColumn) const;
@@ -513,10 +514,10 @@ class MTerminalBuffer
 	void FindWord(int32_t inLine, int32_t inColumn, int32_t &outBeginLine, int32_t &outBeginColumn,
 		int32_t &outEndLine, int32_t &outEndColumn) const;
 
-	std::string GetSelectedText() const;
-	std::string GetText(int32_t inLine1, int32_t inColumn1, int32_t inLine2, int32_t inColumn2, bool inBlock) const;
+	[[nodiscard]] std::string GetSelectedText() const;
+	[[nodiscard]] std::string GetText(int32_t inLine1, int32_t inColumn1, int32_t inLine2, int32_t inColumn2, bool inBlock) const;
 
-	int32_t BufferedLines() const { return static_cast<int32_t>(mBuffer.size()); }
+	[[nodiscard]] int32_t BufferedLines() const { return static_cast<int32_t>(mBuffer.size()); }
 
 	bool FindNext(int32_t &ioLine, int32_t &ioColumn, const std::string &inWhat,
 		bool inIgnoreCase, bool inWrapAround);
@@ -530,14 +531,14 @@ class MTerminalBuffer
 		int32_t &outBeginLine, int32_t &outBeginColumn,
 		int32_t &outEndLine, int32_t &outEndColumn) const;
 
-	std::string GetHyperLink(int inNr) const;
+	[[nodiscard]] std::string GetHyperLink(int inNr) const;
 
-	std::tuple<int32_t, int32_t> GetHoveredLinkColumBounds(int32_t inLine) const;
+	[[nodiscard]] std::tuple<int32_t, int32_t> GetHoveredLinkColumBounds(int32_t inLine) const;
 
   private:
-	unicode GetChar(uint32_t inOffset, bool inToLower) const;
+	[[nodiscard]] unicode GetChar(uint32_t inOffset, bool inToLower) const;
 
-	unicode GetChar(int32_t inLine, int32_t inColumn, bool inToLower) const;
+	[[nodiscard]] unicode GetChar(int32_t inLine, int32_t inColumn, bool inToLower) const;
 
 	void GarbageCollectHyperlinks();
 	// void ScanForHyperLinks();
@@ -546,9 +547,9 @@ class MTerminalBuffer
 	uint32_t mBufferSize;
 	std::vector<MLine> mLines;
 	uint32_t mWidth;
-	bool mDirty;
-	int32_t mBeginLine, mBeginColumn, mEndLine, mEndColumn;
-	bool mBlockSelection;
+	bool mDirty = false;
+	int32_t mBeginLine = 0, mBeginColumn = 0, mEndLine = 0, mEndColumn = 0;
+	bool mBlockSelection = false;
 	std::optional<MColor> mForeColor, mBackColor;
 
 	// On screen hyperlinks

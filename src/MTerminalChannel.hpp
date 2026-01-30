@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MP2PEvents.hpp"
+#include <MP2PEvents.hpp>
 
 #include <pinch.hpp>
 

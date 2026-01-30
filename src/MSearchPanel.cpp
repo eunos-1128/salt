@@ -28,15 +28,12 @@
 // All rights reserved
 
 #include "MSearchPanel.hpp"
-#include "MCanvas.hpp"
-#include "MControls.hpp"
-#include "MDevice.hpp"
-#include "MPreferences.hpp"
-#include "MSound.hpp"
-#include "MStrings.hpp"
 #include "MTerminalWindow.hpp"
 
-#include "mrsrc.hpp"
+#include <MControls.hpp>
+#include <MDevice.hpp>
+#include <MPreferences.hpp>
+#include <MStrings.hpp>
 
 // --------------------------------------------------------------------
 
@@ -44,7 +41,6 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 	: MBoxControl(inID, inBounds, true)
 	, eFindBtn(this, &MSearchPanel::FindBtn)
 	, eKeyDown(this, &MSearchPanel::KeyDown)
-	, mTextBox(nullptr)
 {
 	MDevice dev;
 	dev.SetFont(
@@ -57,7 +53,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 
 	std::string captionString(LocaliseStr("Find:"));
 	dev.SetText(captionString);
-	uint32_t captionWidth = static_cast<uint32_t>(dev.GetTextWidth());
+	auto captionWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
 	MRect bounds(inBounds);
 
@@ -66,7 +62,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 	bounds.width = captionWidth;
 	bounds.y = (bounds.height - 24) / 2 + 4;
 	bounds.height = dev.GetLineHeight();
-	MCaption *caption = new MCaption("search-caption", bounds, captionString);
+	auto *caption = new MCaption("search-caption", bounds, captionString);
 	caption->SetLayout({ false, 4 });
 	AddChild(caption);
 
@@ -83,7 +79,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 
 	std::string label(LocaliseStr("Case sensitive"));
 	dev.SetText(label);
-	uint32_t labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
+	auto labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
 	bounds = GetBounds();
 	bounds.x = 32 + captionWidth + 4 + 200 + 4;
@@ -104,7 +100,7 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 	labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
 	bounds.width = labelWidth + 20;
-	MButton *next = new MButton("find-next", bounds, label);
+	auto *next = new MButton("find-next", bounds, label);
 	next->SetLayout({ false, 4 });
 	AddChild(next);
 	AddRoute(next->eClicked, eFindBtn);
@@ -116,15 +112,13 @@ MSearchPanel::MSearchPanel(const std::string &inID, MRect inBounds)
 	labelWidth = static_cast<uint32_t>(dev.GetTextWidth());
 
 	bounds.width = labelWidth + 20;
-	MButton *prev = new MButton("find-prev", bounds, label);
+	auto *prev = new MButton("find-prev", bounds, label);
 	prev->SetLayout({ false, 4 });
 	AddChild(prev);
 	AddRoute(prev->eClicked, eFindBtn);
 }
 
-MSearchPanel::~MSearchPanel()
-{
-}
+MSearchPanel::~MSearchPanel() = default;
 
 void MSearchPanel::Close()
 {
@@ -170,7 +164,7 @@ void MSearchPanel::KeyDown(uint32_t inKeyCode, uint32_t inModifiers)
 		case kUpArrowKeyCode:
 			eSearch(searchUp);
 			break;
-		
+
 		case kDownArrowKeyCode:
 			eSearch(searchDown);
 			break;

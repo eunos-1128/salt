@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MDialog.hpp"
+#include <MDialog.hpp>
 
 #include <filesystem>
 #include <optional>

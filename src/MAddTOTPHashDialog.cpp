@@ -28,10 +28,11 @@
 // All rights reserved
 
 #include "MAddTOTPHashDialog.hpp"
-#include "MAlerts.hpp"
-#include "MPreferences.hpp"
 #include "MSaltApp.hpp"
-#include "MUtils.hpp"
+
+#include <MAlerts.hpp>
+#include <MPreferences.hpp>
+#include <MUtils.hpp>
 
 #include <zeep/crypto.hpp>
 
@@ -42,9 +43,7 @@ MAddTOTPHashDialog::MAddTOTPHashDialog()
 {
 }
 
-MAddTOTPHashDialog::~MAddTOTPHashDialog()
-{
-}
+MAddTOTPHashDialog::~MAddTOTPHashDialog() = default;
 
 bool MAddTOTPHashDialog::OKClicked()
 {
