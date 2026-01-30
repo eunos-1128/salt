@@ -69,8 +69,6 @@ std::regex kRecentRE("^" USER HOST PORT "(?:;" USER HOST PORT ";(.+)"
 					 ")?(?: >> (.+))?$");
 } // namespace
 
-
-
 // --------------------------------------------------------------------
 
 MSaltApp::MSaltApp(MApplicationImpl *inImpl)
@@ -257,7 +255,10 @@ void MSaltApp::OnManual()
 		f.close();
 
 		MWindow *w = MTerminalWindow::Create(std::filesystem::current_path(),
-			{ "man", manpage.string() });
+			{ "env",
+				"MANPAGER=less --mouse ",
+				"man",
+				manpage.string() });
 		w->Select();
 	}
 }

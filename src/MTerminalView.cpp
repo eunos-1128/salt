@@ -841,9 +841,11 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 		}
 	}
 
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent) and inClickCount == 1)
-	{
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 		SendMouseCommand(0, true, inX, inY, inModifiers);
+
+	if (inClickCount == 1)
+	{
 		mMouseClick = eTrackClick;
 		done = true;
 	}
