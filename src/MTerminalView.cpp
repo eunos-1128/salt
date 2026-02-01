@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -52,19 +52,18 @@
 #include <MWindow.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
+#include <ios>
+#include <map>
 #include <pinch/debug.hpp>
+#include <regex>
+#include <source_location>
 #include <utility>
 #include <zeep/crypto.hpp>
 #include <zeep/unicode-support.hpp>
 #include <zeep/uri.hpp>
-
-#include <chrono>
-#include <cmath>
-#include <ios>
-#include <map>
-#include <regex>
-#include <source_location>
 
 // --------------------------------------------------------------------
 
@@ -3934,10 +3933,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-				  // break;
+			// break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-				  // break;
+			// break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
