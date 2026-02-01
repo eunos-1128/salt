@@ -2140,15 +2140,10 @@ void MTerminalView::EnterText(const std::string &inText, bool inRepeat)
 	if (inRepeat and mDECARM == false)
 		return;
 
-	// bool handled = false;
-
 	if (not mTerminalChannel->IsOpen())
 	{
 		if (inText == " " or inText == "\n")
-		{
 			Open();
-			// handled = true;
-		}
 	}
 	else
 	{
@@ -2173,11 +2168,7 @@ void MTerminalView::EnterText(const std::string &inText, bool inRepeat)
 			Invalidate();
 
 		ObscureCursor();
-
-		// handled = true;
 	}
-
-	// return handled;
 }
 
 // const std::vector<std::string> kDisallowedPasteCharacters{
