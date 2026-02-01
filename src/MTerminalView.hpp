@@ -104,7 +104,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void HandleReceived(const std::error_code &ec, std::streambuf &inData);
 
 	bool KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t inModifiers, bool inAutoRepeat) override;
-	void EnterText(const std::string &inText /* , bool inRepeat */) override;
+	void EnterText(const std::string &inText, bool inRepeat) override;
 
 	void HandleMessage(const std::string &inMessage, const std::string &inLanguage);
 
@@ -355,7 +355,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	// VT220 support
 	bool mS8C1T;
 	struct MPFK *mPFK = nullptr; // device control strings
-	struct MPFK *mNewPFK= nullptr;
+	struct MPFK *mNewPFK = nullptr;
 	bool mUDKWithShift;
 
 	// handling of escape sequences

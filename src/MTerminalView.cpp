@@ -1945,6 +1945,8 @@ bool MTerminalView::KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t 
 	bool handled = true;
 	std::string text;
 
+	std::cout << "Autorepeat: " << std::boolalpha << inAutoRepeat << '\n';
+
 	for (;;)
 	{
 		// shortcut
@@ -2132,12 +2134,12 @@ void MTerminalView::HandleMessage(const std::string &inMessage, const std::strin
 	Invalidate();
 }
 
-void MTerminalView::EnterText(const std::string &inText /* , bool inRepeat */)
+void MTerminalView::EnterText(const std::string &inText, bool inRepeat)
 {
-	/* 	// shortcut
-	    if (inRepeat and mDECARM == false)
-	        return true;
-	 */
+	// shortcut
+	if (inRepeat and mDECARM == false)
+		return;
+
 	// bool handled = false;
 
 	if (not mTerminalChannel->IsOpen())
@@ -3941,10 +3943,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-			// break;
+				  // break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-			// break;
+				  // break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
