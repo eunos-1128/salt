@@ -342,6 +342,7 @@ class MLine
 	}
 	void SetDoubleHeight(bool inTop)
 	{
+		mDoubleWidth = true;
 		mDoubleHeight = true;
 		mDoubleHeightTop = inTop;
 	}

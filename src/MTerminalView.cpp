@@ -1189,15 +1189,18 @@ void MTerminalView::Draw()
 		const MLine &line(lineNr == mTerminalHeight ? mStatusLineBuffer.GetLine(0) : mBuffer->GetLine(lineNr));
 		static MEncodingTraits<kEncodingUTF8> traits;
 
-		float ty = y;
+		MRect clip(mBounds.x, y, mBounds.width, mLineHeight);
+		dev.ClipRect(clip);
+
 		if (line.IsDoubleHeight())
 		{
-			if (not line.IsDoubleHeightTop())
-				ty -= mLineHeight;
-			dev.SetScale(2.0, 2.0, x, ty);
+			if (line.IsDoubleHeightTop())
+				dev.SetMatrix({ .xx = 2, .yy = 2, .y0 = -y });
+			else
+				dev.SetMatrix({ .xx = 2, .yy = 2, .y0 = -y - mLineHeight });
 		}
 		else if (line.IsDoubleWidth())
-			dev.SetScale(2.0, 1.0, x, y);
+			dev.SetMatrix({ .xx = 2, .yy = 1 });
 
 		std::vector<MColor> colors;
 		std::vector<uint32_t> colorIndex, colorOffset;
@@ -1375,7 +1378,7 @@ void MTerminalView::Draw()
 				backColorOffset[b + 1] - backColorOffset[b], colors[backColorIndex[b]]);
 		}
 
-		dev.RenderText(x, ty);
+		dev.RenderText(x, y);
 
 		// draw the caret if needed
 		if (not caretRect.empty())
@@ -1383,6 +1386,8 @@ void MTerminalView::Draw()
 			dev.SetBackColor(caretColor);
 			dev.EraseRect(caretRect);
 		}
+
+		dev.SetMatrix({ .xx = 1, .yy = 1 });
 
 		y += mLineHeight;
 	}
@@ -3936,10 +3941,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-				  // break;
+			// break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-				  // break;
+			// break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
