@@ -229,6 +229,9 @@ void MPtyTerminalChannel::Execute(const std::vector<std::string> &inArgv, const 
 	// export TERM
 	setenv("TERM", inTerminalType.c_str(), true);
 
+	// And advertise TRUECOLOR
+	setenv("COLORTERM", "truecolor", true);
+
 	// char *argv[] = { strdup(shell.c_str()), nullptr };
 
 	std::vector<char *> argv;

@@ -152,8 +152,6 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 	const std::vector<std::string> &inArgv, const vector<string> &env,
 	const OpenCallback &inOpenCallback)
 {
-	// env is ignored anyway...
-
 	MAppExecutor my_executor{ &MSaltApp::Instance().get_context() };
 
 	auto cb = asio_ns::bind_executor(
@@ -170,6 +168,12 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 			if (this->mRefCount > 0)
 				inOpenCallback(ec);
 		});
+
+	for (auto &e : env)
+	{
+		if (auto s = e.find('='); s != std::string::npos)
+			mChannel->set_environment_variable(e.substr(0, s), e.substr(s + 1));
+	}
 
 	mChannel->open_with_pty(mTerminalWidth, mTerminalHeight,
 		inTerminalType, inForwardAgent, inForwardX11, inArgv.empty() ? "" : inArgv.front(), std::move(cb));

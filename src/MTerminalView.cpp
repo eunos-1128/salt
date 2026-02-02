@@ -3731,7 +3731,7 @@ void MTerminalView::EscapeCSI(uint8_t inChar)
 
 	if (inChar >= '0' and inChar <= '9')
 		mArgs.back() = mArgs.back() * 10 + (inChar - '0');
-	else if (inChar == ';')
+	else if (inChar == ';' or (inChar == ':' and (mArgs[0] == 38 or mArgs[0] == 48)))
 		mArgs.push_back(0);
 	else if (inChar >= ' ' and inChar <= '?')
 		mCSICmd = mCSICmd << 8 | inChar;
@@ -4977,11 +4977,13 @@ void MTerminalView::EscapeDCS(uint8_t inChar)
 				if (mCursor.style & kStyleInvisible)
 					sgr.emplace_back("8");
 				if (mCursor.foreground)
-					sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
+					sgr.emplace_back(std::format("38:2:{}:{}:{}", mCursor.foreground->red, mCursor.foreground->green, mCursor.foreground->blue));
+					// sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
 				if (mCursor.background)
-					sgr.push_back(std::to_string(40 + LookupColor(*mCursor.background)));
+					// sgr.push_back(std::to_string(40 + LookupColor(*mCursor.background)));
+					sgr.emplace_back(std::format("48:2:{}:{}:{}", mCursor.background->red, mCursor.background->green, mCursor.background->blue));
 
-				response = std::format("\033P1$r%s", Join(sgr, ";").c_str());
+				response = std::format("\033P1$r{}", Join(sgr, ";").c_str());
 			}
 			//			else if (mDECRQSS == ",|")	// DECAC - Assign Color
 			//			else if (mDECRQSS == ",}")	// DECATC - Alternate Text Color
