@@ -410,9 +410,6 @@ void MSaltApp::DoQuit()
 int MSaltApp::HandleCommandLine(int argc, const char *const argv[],
 	const std::filesystem::path &cwd)
 {
-	for (int i = 0; i < argc; ++i)
-		std::cout << (argv[i] ? argv[i] : "null") << '\n';
-
 	auto &config = mcfp::config::instance();
 
 	config.init(

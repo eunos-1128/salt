@@ -818,12 +818,14 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 	}
 
 	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+	{
 		SendMouseCommand(0, true, inX, inY, inModifiers);
 
-	if (inClickCount == 1)
-	{
-		mMouseClick = eTrackClick;
-		done = true;
+		if (inClickCount == 1)
+		{
+			mMouseClick = eTrackClick;
+			done = true;
+		}
 	}
 
 	if (not done)
@@ -1943,8 +1945,6 @@ bool MTerminalView::KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t 
 
 	bool handled = true;
 	std::string text;
-
-	std::cout << "Autorepeat: " << std::boolalpha << inAutoRepeat << '\n';
 
 	for (;;)
 	{
@@ -3933,10 +3933,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-			// break;
+				  // break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-			// break;
+				  // break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
