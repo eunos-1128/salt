@@ -765,8 +765,6 @@ bool MTerminalView::GetCharacterForPosition(int32_t inX, int32_t inY, int32_t &o
 
 void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount, uint32_t inModifiers)
 {
-	// PRINT(("Click with modifiers %s%s%s%s", (inModifiers ? "" : " none"), (inModifiers & kShiftKey ? " shift" : ""), (inModifiers & kOptionKey ? " alt" : ""), (inModifiers & kControlKey ? " control" : "")));
-
 	if (not IsFocus())
 		SetFocus();
 
@@ -874,10 +872,10 @@ void MTerminalView::PointerMotion(int32_t inX, int32_t inY, uint32_t inModifiers
 {
 	using namespace std::chrono_literals;
 
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::AnyEvent) or
-		(mMouseClick == eTrackClick and GetMouseTrackingFlag(MouseTrackingModeFlag::ButtonEvent)))
+	if (mMouseClick == eTrackClick)
 	{
-		SendMouseCommand(32, mMouseClick == eTrackClick, inX, inY, inModifiers);
+		if (GetMouseTrackingFlag(MouseTrackingModeFlag::ButtonEvent))
+			SendMouseCommand(32, mMouseClick == eTrackClick, inX, inY, inModifiers);
 		return;
 	}
 
@@ -985,7 +983,7 @@ void MTerminalView::PointerLeave()
 
 void MTerminalView::ClickReleased(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+	if (mMouseClick == eTrackClick)
 		SendMouseCommand(0, false, inX, inY, inModifiers);
 	else if (mMouseClick == eLinkClick)
 	{
@@ -1023,7 +1021,7 @@ bool MTerminalView::Scroll(int32_t inX, int32_t inY, int32_t /*inDeltaX*/, int32
 
 void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent) and not(inModifiers & kShiftKey))
 		SendMouseCommand(2, true, inX, inY, 0);
 	else if (MClipboard::PrimaryInstance().HasData() and mTerminalChannel->IsOpen())
 	{
@@ -1034,7 +1032,7 @@ void MTerminalView::MiddleMouseButtonClick(int32_t inX, int32_t inY, uint32_t in
 
 void MTerminalView::SecondaryMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers)
 {
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent) and not(inModifiers & kShiftKey))
 		SendMouseCommand(1, true, inX, inY, 0);
 	else
 	{
@@ -3933,10 +3931,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-			// break;
+				  // break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-			// break;
+				  // break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
@@ -5723,7 +5721,7 @@ void MTerminalView::SetDECMode(uint32_t inMode, bool inSet)
 		case 2004:
 			mBracketedPaste = inSet;
 			break;
-		
+
 		case 2026:
 			mSynchronisingUpdate = inSet;
 			if (not mSynchronisingUpdate and mUpdatePending)
