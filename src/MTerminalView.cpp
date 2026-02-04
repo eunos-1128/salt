@@ -3175,7 +3175,7 @@ void MTerminalView::Emulate()
 				mLastChar = 0;
 			mLastCtrl = true;
 
-			// shortcut, do not process control code if in a DCS or OSC std::string
+			// shortcut, do not process control code if in a DCS or OSC string
 			if (ch != ESC)
 			{
 				switch (mEscState)
@@ -3236,8 +3236,8 @@ void MTerminalView::Emulate()
 					break;
 
 				case ESC:
-					// If we're processing an escape std::string and then receive an escape
-					// this can either mean the beginning of a new escape std::string cancelling
+					// If we're processing an escape string and then receive an escape
+					// this can either mean the beginning of a new escape string cancelling
 					// the previous, or it may be the start of a ST or BEL sequence.
 					// The latter can only occur when 8 bit controls are in use.
 
@@ -3345,7 +3345,7 @@ void MTerminalView::Emulate()
 				continue;
 			}
 
-			// OK, so we're in the middle of an escape std::string
+			// OK, so we're in the middle of an escape string
 			switch (mEscState)
 			{
 				case eESC_SEEN:
@@ -3396,7 +3396,7 @@ void MTerminalView::Emulate()
 					assert(false); // now what?
 			}
 
-			continue; // ignore anything else, we're in an escape std::string
+			continue; // ignore anything else, we're in an escape string
 		}
 
 		mLastCtrl = false;
@@ -3469,9 +3469,6 @@ inline uint32_t MTerminalView::GetParam(uint32_t inParamNr, uint32_t inDefault)
 
 void MTerminalView::GetRectParam(uint32_t inParamOffset, int32_t &outTop, int32_t &outLeft, int32_t &outBottom, int32_t &outRight)
 {
-	//	int32_t dx = mCursor.DECOM ? mMarginLeft : 0;
-	//	int32_t dy = mCursor.DECOM ? mMarginTop : 0;
-
 	outTop = GetParam(inParamOffset + 0, 1) - 1;
 	outLeft = GetParam(inParamOffset + 1, 1) - 1;
 	outBottom = GetParam(inParamOffset + 2, mTerminalHeight) - 1;
@@ -3704,7 +3701,7 @@ void MTerminalView::EscapeStart(uint8_t inChar)
 		case 'l': /* Memory Lock */
 		case 'm': /* Memory Unlock */
 		case '^': /* privacy message */
-		case 'X': /* Start of std::string */
+		case 'X': /* Start of string */
 		default:  /* ignore */
 			break;
 	}
@@ -5308,7 +5305,7 @@ void MTerminalView::EscapeOSC(uint8_t inChar)
 				if (mArgString.length() > 2 and mArgString[1] == ';' and mArgString[0] == 'c')
 				{
 					if (mArgString[2] == '?')
-						SendCommand("\033]52;c;\033\\"); // empty std::string as reply, sorry
+						SendCommand("\033]52;c;\033\\"); // empty string as reply, sorry
 					else
 					{
 						auto s = zeep::decode_base64({ mArgString.data() + 2, mArgString.length() - 2 });
