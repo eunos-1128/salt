@@ -767,69 +767,58 @@ void MTerminalView::ClickPressed(int32_t inX, int32_t inY, int32_t inClickCount,
 {
 	// PRINT(("Click with modifiers %s%s%s%s", (inModifiers ? "" : " none"), (inModifiers & kShiftKey ? " shift" : ""), (inModifiers & kOptionKey ? " alt" : ""), (inModifiers & kControlKey ? " control" : "")));
 
-	bool done = false;
-
 	if (not IsFocus())
 		SetFocus();
 
 	int32_t line, column;
 	GetCharacterForPosition(inX, inY, line, column);
 
-	if (not mBuffer->IsSelectionEmpty())
+	if (int hoveredLink = mBuffer->GetHoveredLink(line, column);
+		hoveredLink != 0 and
+		(inModifiers & kControlKey) and not(inModifiers & kShiftKey) and
+		not GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
 	{
-		if (inModifiers & kShiftKey and not GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
+		mCurrentLink = mAnchorLink = hoveredLink;
+		mMouseClick = eLinkClick;
+		Invalidate();
+	}
+	else if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent) and not(inModifiers & kShiftKey))
+	{
+		SendMouseCommand(0, true, inX, inY, inModifiers);
+		mMouseClick = eTrackClick;
+	}
+	else
+	{
+		if (not mBuffer->IsSelectionEmpty())
 		{
-			mMouseClick = eSingleClick;
-
-			if (line < mMinSelLine or (line == mMinSelLine and column < mMinSelCol))
+			if (inModifiers & kShiftKey)
 			{
-				mBuffer->SetSelection(line, column, mMaxSelLine, mMaxSelCol, mMouseBlockSelect);
+				mMouseClick = eSingleClick;
 
-				mMinSelLine = mMaxSelLine;
-				mMinSelCol = mMaxSelCol;
+				if (line < mMinSelLine or (line == mMinSelLine and column < mMinSelCol))
+				{
+					mBuffer->SetSelection(line, column, mMaxSelLine, mMaxSelCol, mMouseBlockSelect);
+
+					mMinSelLine = mMaxSelLine;
+					mMinSelCol = mMaxSelCol;
+				}
+				else
+				{
+					mBuffer->SetSelection(mMinSelLine, mMinSelCol, line, column + 1, mMouseBlockSelect);
+
+					mMaxSelLine = mMinSelLine;
+					mMaxSelCol = mMinSelCol;
+				}
+
+				Invalidate();
 			}
 			else
 			{
-				mBuffer->SetSelection(mMinSelLine, mMinSelCol, line, column + 1, mMouseBlockSelect);
-
-				mMaxSelLine = mMinSelLine;
-				mMaxSelCol = mMinSelCol;
+				mBuffer->SetSelection(0, 0, 0, 0, false);
+				Invalidate();
 			}
-
-			Invalidate();
-			done = true;
 		}
-		else
-		{
-			mBuffer->SetSelection(0, 0, 0, 0, false);
-			Invalidate();
-		}
-	}
-	else if (inModifiers & kControlKey and not GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
-	{
-		int hoveredLink = mBuffer->GetHoveredLink(line, column);
-		if (hoveredLink != 0)
-		{
-			mCurrentLink = mAnchorLink = hoveredLink;
-			mMouseClick = eLinkClick;
-			done = true;
-			Invalidate();
-		}
-	}
 
-	if (GetMouseTrackingFlag(MouseTrackingModeFlag::SendAnyButtonEvent))
-	{
-		SendMouseCommand(0, true, inX, inY, inModifiers);
-
-		if (inClickCount == 1)
-		{
-			mMouseClick = eTrackClick;
-			done = true;
-		}
-	}
-
-	if (not done)
-	{
 		switch (inClickCount)
 		{
 			case 1:
@@ -2736,7 +2725,7 @@ void MTerminalView::SendMouseCommand(int32_t inButton, bool inPressed, int32_t i
 	}
 	else if (GetMouseTrackingFlag(MouseTrackingModeFlag::SGRExtendedMode))
 	{
-		int cb = inButton & ~32;
+		int cb = inButton;
 		if (inModifiers & kShiftKey)
 			cb |= 4;
 		if (inModifiers & kOptionKey)
@@ -3944,10 +3933,10 @@ void MTerminalView::ProcessCSILevel1(uint32_t inCmd)
 			//		break;
 			// NP -- Next Page
 		case eNP: /* unimplemented */
-				  // break;
+			// break;
 		// PP -- Preceding Page
 		case ePP: /* unimplemented */
-				  // break;
+			// break;
 		// PPA -- Page Position Absolute
 		case ePPA: /* unimplemented */
 				   // break;
@@ -4989,7 +4978,7 @@ void MTerminalView::EscapeDCS(uint8_t inChar)
 					sgr.emplace_back("8");
 				if (mCursor.foreground)
 					sgr.emplace_back(std::format("38:2:{}:{}:{}", mCursor.foreground->red, mCursor.foreground->green, mCursor.foreground->blue));
-					// sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
+				// sgr.push_back(std::to_string(30 + LookupColor(*mCursor.foreground)));
 				if (mCursor.background)
 					// sgr.push_back(std::to_string(40 + LookupColor(*mCursor.background)));
 					sgr.emplace_back(std::format("48:2:{}:{}:{}", mCursor.background->red, mCursor.background->green, mCursor.background->blue));
