@@ -70,13 +70,8 @@ include(VersionString)
 write_version_header(${PROJECT_SOURCE_DIR}/src/)
 
 # Optionally use mrc to create resources
-find_package(mrc QUIET)
-
-if(MRC_FOUND)
-    option(USE_RSRC "Use mrc to create resources" ON)
-else()
-    message(FATAL_ERROR "salt: Cannot continue since mrc was not found")
-endif()
+find_package(mrc REQUIRED)
+mrc_write_header(${CMAKE_CURRENT_SOURCE_DIR}/src/mrsrc.hpp)
 
 add_compile_options(-pthread)
 
