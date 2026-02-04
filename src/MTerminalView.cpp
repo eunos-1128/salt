@@ -1394,6 +1394,17 @@ void MTerminalView::Draw()
 	}
 }
 
+void MTerminalView::Invalidate()
+{
+	if (mSynchronisingUpdate)
+		mUpdatePending = true;
+	else
+	{
+		MCanvas::Invalidate();
+		mUpdatePending = false;
+	}
+}
+
 void MTerminalView::AdjustCursor(int32_t /*inX*/, int32_t /*inY*/, uint32_t /*inModifiers*/)
 {
 	SetCursor(eNormalCursor);
@@ -5722,6 +5733,12 @@ void MTerminalView::SetDECMode(uint32_t inMode, bool inSet)
 
 		case 2004:
 			mBracketedPaste = inSet;
+			break;
+		
+		case 2026:
+			mSynchronisingUpdate = inSet;
+			if (not mSynchronisingUpdate and mUpdatePending)
+				Invalidate();
 			break;
 
 		default:

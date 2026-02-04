@@ -444,6 +444,9 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	bool mAudibleBeep;
 	MAnimationVariable *mDisabledFactor;
 	bool mIgnoreColors;
+	bool mSynchronisingUpdate = false, mUpdatePending = false;
+
+	void Invalidate() override;
 
 	enum class MouseTrackingModeFlag
 	{

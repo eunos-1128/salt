@@ -169,6 +169,8 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 				inOpenCallback(ec);
 		});
 
+	mChannel->set_environment_variable("COLORTERM", "truecolor");
+
 	for (auto &e : env)
 	{
 		if (auto s = e.find('='); s != std::string::npos)
