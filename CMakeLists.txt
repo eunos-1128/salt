@@ -132,7 +132,8 @@ install(TARGETS salt
     RUNTIME DESTINATION bin)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/salt.desktop
-    DESTINATION share/applications)
+    DESTINATION share/applications
+    RENAME com.hekkelman.salt.desktop)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/rsrc/Icons/appicon.png
     RENAME com.hekkelman.salt.png
