@@ -74,6 +74,42 @@ since the required protocol (*xdg_activation_v1*) is not yet
 supported by many. The workaround it so start salt using an X11
 backend. (launch with GDK_BACKEND=x11 in the environment)
 
+## SSH
+
+The *ssh* implementation in *salt* is home grown. It is available as a C++
+library called [libpinch](https://github.com/mhekkel/libpinch.git).
+This library can use the standard ssh-agent on you computer to allow public
+key authentication. Salt uses multiplexing over a single connection which
+allows for quick opening of a new terminal to the same host.
+
+A connection can also be proxied via another SSH host. But this is limited
+to only one hop in the current salt implementation.
+
+Three ways of setting up a SSH tunnel are offered. Simple port forwarding,
+a SOCKS 5 tunnel and a full HTTP proxy implementation. The port forwarding
+is always outbound. Specify the local port and the address to connect to
+using *address:port*. For SOCKS and HTTP you only have to specify the local
+port number. The tunnel is set up using the connection you have open in the
+terminal where you issued the command.
+
+Salt uses a *known_hosts* file in the same format as the one from *open-ssh*.
+The file is located elsewhere though, you can find it in salt’s config
+directory at $HOME/.config/salt/known_hosts.
+
+## Public Key authentication
+
+The private keys you have installed in ssh-agent can be used by *salt* to
+log in to remote hosts. There is also an option in the menu to install a
+public key in the  *.ssh/authorized_keys* file at the remote host.
+
+## TOTP
+
+When your sudo command requires you to enter a so-called *one time password*
+you can use *salt* to generate this for you. You can use the
+*Add One Time Password* menu command to open a dialog where you can enter the
+name and the hash. The new generator will end up in the menu and when selected
+it will type the code into the open terminal.
+
 ## File Transfer
 
 Files can be transferred using drag and drop. Drag a file into
@@ -217,24 +253,6 @@ The commands recognized by Salt are:
 |------------------|-----------------------------------------|
 |                7 | Download the specified file             |
 |                8 | Upload a file to the specified location |
-
-## SSH
-
-The *ssh* implementation in *salt* is home grown. It is available as a C++ library called [libpinch](https://github.com/mhekkel/libpinch.git). This library can use the standard ssh-agent on you computer to allow public key authentication. Salt uses multiplexing over a single connection which allows for quick opening of a new terminal to the same host.
-
-A connection can also be proxied via another SSH host. But this is limited to only one hop in the current salt implementation.
-
-Three ways of setting up a SSH tunnel are offered. Simple port forwarding, a SOCKS 5 tunnel and a full HTTP proxy implementation. The port forwarding is always outbound. Specify the local port and the address to connect to using *address:port*. For SOCKS and HTTP you only have to specify the local port number. The tunnel is set up using the connection you have open in the terminal where you issued the command.
-
-Salt uses a *known_hosts* file in the same format as the one from *open-ssh*. The file is located elsewhere though, you can find it in salt’s config directory at $HOME/.config/salt/known_hosts.
-
-## Public Key authentication
-
-The private keys you have installed in ssh-agent can be used by *salt* to log in to remote hosts. There is also an option in the menu to install a public key in the  *.ssh/authorized_keys* file at the remote host.
-
-## TOTP
-
-When your sudo command requires you to enter a so-called *one time password* you can use *salt* to generate this for you. You can use the *Add One Time Password* menu command to open a dialog where you can enter the name and the hash. The new generator will end up in the menu and when selected it will type the code into the open terminal.
 
 ## Bugs
 
