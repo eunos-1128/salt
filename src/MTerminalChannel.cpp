@@ -34,7 +34,11 @@
 #include <MStrings.hpp>
 
 #include <algorithm>
-#include <asio/experimental/awaitable_operators.hpp>
+#if USE_BOOST_ASIO
+# include <boost/asio/experimental/awaitable_operators.hpp>
+#else
+# include <asio/experimental/awaitable_operators.hpp>
+#endif
 #include <pinch.hpp>
 
 #include <algorithm>
