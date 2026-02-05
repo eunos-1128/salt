@@ -287,6 +287,14 @@ struct tuple_element<Ix, MChar>
 	using type = decltype(std::declval<MChar>().get<Ix>());
 };
 
+// sigh... gcc is behind
+template <> struct tuple_element<0, MChar> { using type = decltype(std::declval<MChar>().get<0>()); };
+template <> struct tuple_element<1, MChar> { using type = decltype(std::declval<MChar>().get<1>()); };
+template <> struct tuple_element<2, MChar> { using type = decltype(std::declval<MChar>().get<2>()); };
+template <> struct tuple_element<3, MChar> { using type = decltype(std::declval<MChar>().get<3>()); };
+template <> struct tuple_element<4, MChar> { using type = decltype(std::declval<MChar>().get<4>()); };
+template <> struct tuple_element<5, MChar> { using type = decltype(std::declval<MChar>().get<5>()); };
+
 } // namespace std
 
 // --------------------------------------------------------------------
