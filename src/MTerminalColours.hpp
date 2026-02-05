@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MColor.hpp"
+#include <MColor.hpp>
 
 extern const MColor k256AnsiColors[256];
 

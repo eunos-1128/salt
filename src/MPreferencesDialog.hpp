@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "MDialog.hpp"
+#include <MDialog.hpp>
 
 class MPreferencesDialog : public MDialog
 {
@@ -42,17 +42,17 @@ class MPreferencesDialog : public MDialog
 
   private:
 	MPreferencesDialog();
-	virtual ~MPreferencesDialog();
+	~MPreferencesDialog() override;
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 
-	virtual bool AllowClose(bool inLogOff);
+	bool AllowClose(bool inLogOff) override;
 
-	virtual void ButtonClicked(const std::string &inID);
-	virtual void CheckboxChanged(const std::string &inID, bool inValue);
-	virtual void TextChanged(const std::string &inID, const std::string &inText);
-	virtual void ValueChanged(const std::string &inID, int32_t inValue);
-	virtual void ColorChanged(const std::string &inID, MColor inValue);
+	void ButtonClicked(const std::string &inID) override;
+	void CheckboxChanged(const std::string &inID, bool inValue) override;
+	void TextChanged(const std::string &inID, const std::string &inText) override;
+	void ValueChanged(const std::string &inID, int32_t inValue) override;
+	void ColorChanged(const std::string &inID, MColor inValue) override;
 
 	MEventIn<void(const std::string &, MColor)> ePreviewBackColor;
 	void BackColorPreview(const std::string &inID, MColor inValue);

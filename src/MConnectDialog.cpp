@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,22 +28,21 @@
 // All rights reserved
 
 #include "MConnectDialog.hpp"
-#include "MAlerts.hpp"
 #include "MAuthDialog.hpp"
-#include "MFile.hpp"
-#include "MPreferences.hpp"
 #include "MPreferencesDialog.hpp"
 #include "MSaltApp.hpp"
-#include "MSound.hpp"
-#include "MStrings.hpp"
 #include "MTerminalView.hpp"
 #include "MTerminalWindow.hpp"
+
+#include <MAlerts.hpp>
+#include <MFile.hpp>
+#include <MPreferences.hpp>
+#include <MSound.hpp>
+#include <MStrings.hpp>
 
 #include <filesystem>
 #include <fstream>
 #include <regex>
-
-namespace fs = std::filesystem;
 
 namespace
 {
@@ -55,9 +54,6 @@ namespace
 #define CONNECT_INFO_BASE USER HOST PORT
 #define PROXY_INFO CONNECT_INFO_BASE R"((?:;(.+))?)"
 #define CONNECT_INFO CONNECT_INFO_BASE "(?: via " PROXY_INFO ")?"
-
-const std::regex kRecentRX(CONNECT_INFO);
-const std::regex kProxyRX(PROXY_INFO);
 } // namespace
 
 // --------------------------------------------------------------------
@@ -104,6 +100,8 @@ std::string ConnectInfo::DisplayString() const
 
 ConnectInfo ConnectInfo::parse(const std::string &s)
 {
+	const std::regex kRecentRX(CONNECT_INFO);
+
 	ConnectInfo ci{};
 
 	std::smatch m;
@@ -133,6 +131,8 @@ ConnectInfo ConnectInfo::parse(const std::string &s)
 MConnectDialog::MConnectDialog()
 	: MDialog("connect-dialog")
 {
+	const std::regex kProxyRX(PROXY_INFO);
+
 	SetOpen("more-expander", false);
 
 	std::smatch m;
@@ -229,7 +229,9 @@ void MConnectDialog::ButtonClicked(const std::string &inID)
 	//		SetVisible("more-box", IsOpen("more-expander"));
 	//	else
 	if (inID == "priv-key")
-		MFileDialogs::ChooseOneFile(this, std::bind(&MConnectDialog::SelectedPrivateKey, this, std::placeholders::_1, std::placeholders::_2));
+		MFileDialogs::ChooseOneFile(this,
+			[this](bool ok, const std::filesystem::path &file)
+			{ SelectedPrivateKey(ok, file); });
 	else
 		MDialog::ButtonClicked(inID);
 }

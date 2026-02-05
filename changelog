@@ -1,3 +1,8 @@
+Version 5.0.0
+- Finally implemented all that is needed, like proper
+  mouse button handling and all menu items are working
+  again.
+
 Version 4.0.4
 - Added kex algo's ecdh-sha2-nistp256 and ecdh-sha2-nistp384
 

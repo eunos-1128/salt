@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -229,6 +229,9 @@ void MPtyTerminalChannel::Execute(const std::vector<std::string> &inArgv, const 
 	// export TERM
 	setenv("TERM", inTerminalType.c_str(), true);
 
+	// And advertise TRUECOLOR
+	setenv("COLORTERM", "truecolor", true);
+
 	// char *argv[] = { strdup(shell.c_str()), nullptr };
 
 	std::vector<char *> argv;
@@ -254,6 +257,7 @@ void MPtyTerminalChannel::Close()
 	{
 		int status;
 		waitpid(mPid, &status, WNOHANG);
+		mPid = -1;
 	}
 }
 
@@ -264,12 +268,8 @@ bool MPtyTerminalChannel::IsOpen() const
 
 bool MPtyTerminalChannel::AllowClose() const
 {
-	bool result = true;
-
-	if (mPid > 0)
-		result = tcgetpgrp(const_cast<asio_ns::posix::stream_descriptor &>(mPty).native_handle()) == mPid;
-
-	return result;
+	return mPty.is_open() == false or
+	       (mPid > 0 and tcgetpgrp(const_cast<asio_ns::posix::stream_descriptor &>(mPty).native_handle()) == mPid);
 }
 
 std::filesystem::path MPtyTerminalChannel::GetCWD() const

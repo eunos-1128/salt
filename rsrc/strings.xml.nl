@@ -311,7 +311,7 @@
 	</localstring>
   
 	<localstring context="prefs-dialog">
-		<key>Use Certficates for authentication</key>
+		<key>Use Certificates for authentication</key>
 		<value>Gebruik certificaten voor identificatie</value>
 	</localstring>
 	
@@ -400,6 +400,11 @@
 		<value>Gebruik huidige werk map, indien bekend (zie documentatie)</value>
 	</localstring>
 
+	<localstring context="prefs-dialog">
+		<key>Control+Right click for context menu</key>
+		<value>Cntrl+rechter muisknop voor context menu</value>
+	</localstring>
+	
 	<localstring context="tunnel-dialog">
 		<key>Please enter the port numbers for the tunnel</key>
 		<value>Vul de poortnummmers voor de tunnel in</value>
@@ -690,7 +695,12 @@
 		<key>One Time Passwords</key>
 		<value>Tijdelijk wachtwoord</value>
 	</localstring>
-	
+
+	<localstring context="menu">
+		<key>Show menubar</key>
+		<value>Toon menubalk</value>
+	</localstring>
+
 	<localstring>
 		<key>Save File</key>
 		<value>Bewaar bestand</value>

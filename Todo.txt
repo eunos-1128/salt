@@ -3,5 +3,3 @@ te doen?
 - kopiëren van kleurtjes (RTF? HTML?)
 - Telnet, rlogin, seriële poort
 - meer documentatie
-- clippen van regel (voor dubbele hoogte tekst)
-

@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,14 +27,12 @@
 // Copyright Maarten L. Hekkelman 2017
 // All rights reserved
 
-#include "MSalt.hpp"
-
 #include "MTerminalColours.hpp"
 
 #include <cmath>
 #include <cstdint>
 
-constexpr uint8_t operator ""_u8 (unsigned long long i) { return static_cast<uint8_t>(i); }
+constexpr uint8_t operator ""_u8 (unsigned long long i) noexcept { return static_cast<uint8_t>(i); }
 
 const MColor k256AnsiColors[256] = {
 

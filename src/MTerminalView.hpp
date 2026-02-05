@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,14 +29,15 @@
 
 #pragma once
 
-#include "MCanvas.hpp"
-#include "MCommand.hpp"
-#include "MColor.hpp"
-#include "MP2PEvents.hpp"
 #include "MSearchPanel.hpp"
 #include "MTerminalBuffer.hpp"
 #include "MTerminalChannel.hpp"
-#include "MUnicode.hpp"
+
+#include <MCanvas.hpp>
+#include <MColor.hpp>
+#include <MCommand.hpp>
+#include <MP2PEvents.hpp>
+#include <MUnicode.hpp>
 
 #include <pinch.hpp>
 
@@ -77,8 +78,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void PointerMotion(int32_t inX, int32_t inY, uint32_t inModifiers) override;
 	void PointerLeave() override;
 
-	void MiddleMouseButtonClick(int32_t inX, int32_t inY) override;
-	void SecondaryMouseButtonClick(int32_t inX, int32_t inY) override;
+	void MiddleMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers) override;
+	void SecondaryMouseButtonClick(int32_t inX, int32_t inY, uint32_t inModifiers) override;
 
 	static void GetTerminalMetrics(uint32_t inColumns, uint32_t inRows, bool inStatusLine,
 		uint32_t &outWidth, uint32_t &outHeight);
@@ -96,14 +97,14 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	bool AllowClose() const { return mTerminalChannel == nullptr or mTerminalChannel->AllowClose(); }
 
 	void SendCommand(std::string inData);
-	
-	void SendMouseCommand(int32_t inButton, int32_t inX, int32_t inY, uint32_t inModifiers);
+
+	void SendMouseCommand(int32_t inButton, bool inPressed, int32_t inX, int32_t inY, uint32_t inModifiers);
 
 	void HandleOpened(const std::error_code &ec);
 	void HandleReceived(const std::error_code &ec, std::streambuf &inData);
 
 	bool KeyPressed(uint32_t inKeyCode, char32_t inUnicode, uint32_t inModifiers, bool inAutoRepeat) override;
-	void EnterText(const std::string &inText/* , bool inRepeat */) override;
+	void EnterText(const std::string &inText, bool inRepeat) override;
 
 	void HandleMessage(const std::string &inMessage, const std::string &inLanguage);
 
@@ -145,8 +146,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void PreviewColors(MColor inBackColor, MColor inSelectionColor);
 
 	MEventIn<void(uint32_t, MRect)> eStatusPartClicked;
-	void StatusPartClicked(uint32_t inNr, MRect);
-	uint32_t mStatusInfo;
+	void StatusPartClicked(uint32_t inNr, MRect r);
+	uint32_t mStatusInfo{};
 
 	MStatusbar *mStatusbar;
 	MScrollbar *mScrollbar;
@@ -154,7 +155,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	MTerminalChannel *mTerminalChannel;
 	std::vector<std::string> mArgv;
-	int32_t mTerminalWidth, mTerminalHeight;
+	int32_t mTerminalWidth{}, mTerminalHeight{};
 
 	MTerminalBuffer mScreenBuffer, mAlternateBuffer, mStatusLineBuffer;
 	MTerminalBuffer *mBuffer;
@@ -229,8 +230,11 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void GetRectParam(uint32_t inParamOffset,
 		int32_t &outTop, int32_t &outLeft, int32_t &outBottom, int32_t &outRight);
 
-	void SetResetMode(uint32_t inMode, bool inANSI, bool inSet);
-	bool GetMode(uint32_t inMode, bool inANSI);
+	void SetAnsiMode(uint32_t inMode, bool inSet);
+	bool GetAnsiMode(uint32_t inMode);
+
+	void SetDECMode(uint32_t inMode, bool inSet);
+	bool GetDECMode(uint32_t inMode);
 
 	MRect GetCharacterBounds(uint32_t inLine, uint32_t inColumn);
 	bool GetCharacterForPosition(int32_t inX, int32_t inY, int32_t &outLine, int32_t &outColumn);
@@ -350,8 +354,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 	// VT220 support
 	bool mS8C1T;
-	struct MPFK *mPFK; // device control strings
-	struct MPFK *mNewPFK;
+	struct MPFK *mPFK = nullptr; // device control strings
+	struct MPFK *mNewPFK = nullptr;
 	bool mUDKWithShift;
 
 	// handling of escape sequences
@@ -375,7 +379,7 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 
 		eVT52_LINE,
 		eVT52_COLUMN
-	} mEscState;
+	} mEscState = eESC_NONE;
 
 	int mState;
 	std::vector<uint32_t> mArgs;
@@ -416,8 +420,8 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	void Animate();
 
 	// status line
-	bool mDECSASD;
-	int mDECSSDT;
+	bool mDECSASD = false;
+	int mDECSSDT = false;
 
 	// rectangle extend
 	bool mDECSACE;
@@ -435,31 +439,57 @@ class MTerminalView : public MCanvas, public std::enable_shared_from_this<MTermi
 	std::string ProcessKeyANSI(uint32_t inKeyCode, uint32_t inModifiers);
 	std::string ProcessKeyXTerm(uint32_t inKeyCode, uint32_t inModifiers);
 
-	MAnimationManager *mAnimationManager;
-	MAnimationVariable *mGraphicalBeep;
+	MAnimationManager *mAnimationManager = nullptr;
+	MAnimationVariable *mGraphicalBeep = nullptr;
 	bool mAudibleBeep;
 	MAnimationVariable *mDisabledFactor;
 	bool mIgnoreColors;
+	bool mSynchronisingUpdate = false, mUpdatePending = false;
 
-	enum MouseTrackingMode
+	void Invalidate() override;
+
+	enum class MouseTrackingModeFlag
 	{
-		eTrackMouseNone,
-		eTrackMouseSendXYOnClick = 9,
-		eTrackMouseSendXYOnButton = 1000,
-		eTrackMouseHilightTracking = 1001,
-		eTrackMouseCellMotionTracking = 1002,
-		eTrackMouseAllMotionTracking = 1003
-	} mMouseMode;
-	int32_t mMouseTrackX, mMouseTrackY;
+		X10 = (1 << 0),
+		VT200 = (1 << 1),
+		VT200Highlight = (1 << 2),
+		ButtonEvent = (1 << 3),
+		AnyEvent = (1 << 4),
+		FocusEvent = (1 << 5),
+		AlternateScroll = (1 << 6),
+		ExtendedMode = (1 << 7),
+		SGRExtendedMode = (1 << 8),
+		URXVTExtendedMode = (1 << 9),
+		PixelPositionMode = (1 << 10),
+
+		SendAnyButtonEvent = (X10 | VT200 | ButtonEvent | AnyEvent)
+	};
+
+	int mMouseTracking = 0;
+
+	constexpr bool GetMouseTrackingFlag(MouseTrackingModeFlag flag) const
+	{
+		return (mMouseTracking & static_cast<int>(flag)) != 0;
+	}
+
+	void SetMouseTrackingFlag(MouseTrackingModeFlag flag, bool inSet)
+	{
+		if (inSet)
+			mMouseTracking |= static_cast<int>(flag);
+		else
+			mMouseTracking &= ~static_cast<int>(flag);
+	}
+
+	int32_t mMouseTrackX, mMouseTrackY, mMouseTrackBtn = 0;
 
 	std::string mSetWindowTitle;
 
 	int mHyperLink = 0, mCurrentLink = 0, mAnchorLink = 0;
 	void SetHyperLink(const std::string &inURI);
 
-	void LinkClicked(std::string inLink);
+	void LinkClicked(const std::string &inLink);
 
-	void OnIOStatus(std::string inMessage);
+	void OnIOStatus(const std::string &inMessage);
 	MEventIn<void(std::string)> eIOStatus;
 
 	bool mDragWithin = false;

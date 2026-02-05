@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,14 +25,16 @@
  */
 
 #include "MPortForwardingDialog.hpp"
-#include "MAlerts.hpp"
 #include "MHTTPProxy.hpp"
-#include "MPreferences.hpp"
+
+#include <MAlerts.hpp>
+#include <MPreferences.hpp>
 
 #include <pinch.hpp>
 
 #include <charconv>
 #include <regex>
+#include <utility>
 
 using namespace std;
 
@@ -40,7 +42,7 @@ using namespace std;
 
 MPortForwardingDialog::MPortForwardingDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection)
 	: MDialog("port-forwarding-dialog")
-	, mConnection(inConnection)
+	, mConnection(std::move(inConnection))
 {
 	SetText("listen", MPrefs::GetString("port-forwarding-port", "2080"));
 	SetText("connect", MPrefs::GetString("port-forwarding-host", "localhost:80"));
@@ -48,9 +50,7 @@ MPortForwardingDialog::MPortForwardingDialog(MWindow *inTerminal, std::shared_pt
 	SetFocus("listen");
 }
 
-MPortForwardingDialog::~MPortForwardingDialog()
-{
-}
+MPortForwardingDialog::~MPortForwardingDialog() = default;
 
 bool MPortForwardingDialog::OKClicked()
 {
@@ -91,16 +91,14 @@ bool MPortForwardingDialog::OKClicked()
 
 MSOCKS5ProxyDialog::MSOCKS5ProxyDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection)
 	: MDialog("socks5-proxy-dialog")
-	, mConnection(inConnection)
+	, mConnection(std::move(inConnection))
 {
 	SetText("listen", MPrefs::GetString("socks5-proxy-port", "2080"));
 	Show(inTerminal);
 	SetFocus("listen");
 }
 
-MSOCKS5ProxyDialog::~MSOCKS5ProxyDialog()
-{
-}
+MSOCKS5ProxyDialog::~MSOCKS5ProxyDialog() = default;
 
 bool MSOCKS5ProxyDialog::OKClicked()
 {
@@ -125,7 +123,7 @@ bool MSOCKS5ProxyDialog::OKClicked()
 
 MHTTPProxyDialog::MHTTPProxyDialog(MWindow *inTerminal, std::shared_ptr<pinch::basic_connection> inConnection)
 	: MDialog("http-proxy-dialog")
-	, mConnection(inConnection)
+	, mConnection(std::move(inConnection))
 {
 	SetText("listen", MPrefs::GetString("http-proxy-port", "3128"));
 	SetChecked("log", MPrefs::GetBoolean("http-proxy-log", false));
@@ -144,9 +142,7 @@ MHTTPProxyDialog::MHTTPProxyDialog(MWindow *inTerminal, std::shared_ptr<pinch::b
 	// m_password_changed = false;
 }
 
-MHTTPProxyDialog::~MHTTPProxyDialog()
-{
-}
+MHTTPProxyDialog::~MHTTPProxyDialog() = default;
 
 bool MHTTPProxyDialog::OKClicked()
 {
@@ -175,7 +171,7 @@ bool MHTTPProxyDialog::OKClicked()
 		// 	MPrefs::SetString("http-proxy-password", zeep::encode_hex(zeep::md5(user + ':' + kSaltProxyRealm + ':' + password)));
 		// }
 
-		MHTTPProxy::instance().Init(mConnection, listenPort, false/* not user.empty() */,
+		MHTTPProxy::instance().Init(mConnection, listenPort, false /* not user.empty() */,
 			log ? log_level::request : log_level::none);
 
 		result = true;

@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -30,19 +30,22 @@
 
 #include "MSaltApp.hpp"
 #include "MAddTOTPHashDialog.hpp"
-#include "MAlerts.hpp"
 #include "MConnectDialog.hpp"
-#include "MMenu.hpp"
-#include "MPreferences.hpp"
 #include "MPreferencesDialog.hpp"
 #include "MTerminalWindow.hpp"
-#include "MUnicode.hpp"
-#include "MUtils.hpp"
+
+#include <MAlerts.hpp>
+#include <MMenu.hpp>
+#include <MPreferences.hpp>
+#include <MUnicode.hpp>
+#include <MUtils.hpp>
+
 #include "mrsrc.hpp"
 #include "revision.hpp"
 
 #include <mcfp/mcfp.hpp>
 #include <pinch.hpp>
+#include <utility>
 #include <zeep/uri.hpp>
 
 #include <filesystem>
@@ -58,18 +61,6 @@
 namespace fs = std::filesystem;
 
 const char kAppName[] = "salt";
-
-namespace
-{
-#define USER "(?:([-$_.+!*'(),[:alnum:];?&=]+)@)?"
-#define HOST "([-[:alnum:].]+)"
-#define PORT "(?::(\\d+))?"
-
-std::regex kRecentRE("^" USER HOST PORT "(?:;" USER HOST PORT ";(.+)"
-					 ")?(?: >> (.+))?$");
-} // namespace
-
-
 
 // --------------------------------------------------------------------
 
@@ -198,6 +189,7 @@ void MSaltApp::OnPreferencesChanged()
 void MSaltApp::SaveGlobals()
 {
 	std::vector<std::string> recent_v;
+	recent_v.reserve(mRecent.size());
 	for (const auto &[r, nr] : mRecent)
 		recent_v.emplace_back(r.str());
 	MPrefs::SetArray("recent-sessions", recent_v);
@@ -257,7 +249,10 @@ void MSaltApp::OnManual()
 		f.close();
 
 		MWindow *w = MTerminalWindow::Create(std::filesystem::current_path(),
-			{ "man", manpage.string() });
+			{ "env",
+				"MANPAGER=less --mouse ",
+				"man",
+				manpage.string() });
 		w->Select();
 	}
 }
@@ -294,7 +289,7 @@ void MSaltApp::OnOpenRecent(int inConnectionNr)
 {
 	for (const auto &[ci, nr] : mRecent)
 	{
-		if (static_cast<int>(nr) != inConnectionNr)
+		if (std::cmp_not_equal(nr, inConnectionNr))
 			continue;
 
 		Open(ci);
@@ -321,6 +316,7 @@ void MSaltApp::UpdateWindowMenu()
 void MSaltApp::UpdateRecentSessionMenu()
 {
 	std::vector<std::tuple<std::string, int>> items;
+	items.reserve(mRecent.size());
 	for (const auto &[ci, nr] : mRecent)
 		items.emplace_back(ci.str(), nr);
 	MMenuBar::Instance().FindMenuByID("recent")->ReplaceItemsInSection(
@@ -414,9 +410,6 @@ void MSaltApp::DoQuit()
 int MSaltApp::HandleCommandLine(int argc, const char *const argv[],
 	const std::filesystem::path &cwd)
 {
-	for (int i = 0; i < argc; ++i)
-		std::cout << (argv[i] ? argv[i] : "null") << '\n';
-
 	auto &config = mcfp::config::instance();
 
 	config.init(
@@ -464,12 +457,12 @@ void MSaltApp::Execute(const std::string &inCommand,
 	{
 		ConnectInfo ci;
 
-		auto url = inArguments.front();
+		const auto &url = inArguments.front();
 
 		if (zeep::is_valid_uri(url))
 		{
 			zeep::uri uri(url);
-			if (auto scheme = uri.get_scheme();
+			if (const auto &scheme = uri.get_scheme();
 				not(scheme.empty() or IEquals(scheme, "ssh")))
 				return;
 
@@ -503,7 +496,7 @@ void MSaltApp::Execute(const std::string &inCommand,
 
 void SetStdinEcho(bool inEnable)
 {
-	struct termios tty;
+	struct termios tty{};
 	::tcgetattr(STDIN_FILENO, &tty);
 	if (not inEnable)
 		tty.c_lflag &= ~ECHO;
@@ -524,7 +517,7 @@ bool askYesNo(const std::string &msg, bool defaultYes)
 	                     : IEquals(yesno, "y") or IEquals(yesno, "yes");
 }
 
-std::string ask(const std::string &msg, std::string defaultAnswer = {})
+std::string ask(const std::string &msg, const std::string &defaultAnswer = {})
 {
 	std::cout << msg << " [" << defaultAnswer << "]: ";
 	std::cout.flush();
@@ -560,7 +553,7 @@ void Install(const std::string &inPrefix)
 		// --------------------------------------------------------------------
 		// Ask if this is ok
 
-		std::cout << "No prefix was specied, where do you want to install salt?\n";
+		std::cout << "No prefix was specified, where do you want to install salt?\n";
 
 		prefix = ask("prefix path", prefix);
 	}
@@ -742,6 +735,7 @@ int main(int argc, char *const argv[])
 	}
 
 	std::vector<std::string> args;
+	args.reserve(argc);
 	for (int i = 0; i < argc; ++i)
 		args.emplace_back(argv[i]);
 

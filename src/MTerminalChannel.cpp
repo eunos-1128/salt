@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,11 +28,17 @@
 // All rights reserved
 
 #include "MTerminalChannel.hpp"
-#include "MAlerts.hpp"
 #include "MSaltApp.hpp"
-#include "MStrings.hpp"
 
-#include <asio/experimental/awaitable_operators.hpp>
+#include <MAlerts.hpp>
+#include <MStrings.hpp>
+
+#include <algorithm>
+#if USE_BOOST_ASIO
+# include <boost/asio/experimental/awaitable_operators.hpp>
+#else
+# include <asio/experimental/awaitable_operators.hpp>
+#endif
 #include <pinch.hpp>
 
 #include <algorithm>
@@ -71,7 +77,7 @@ void MTerminalChannel::Disconnect(bool disconnectProxy)
 class MSshTerminalChannel : public MTerminalChannel
 {
   public:
-	explicit MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection);
+	explicit MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection);
 	~MSshTerminalChannel() override;
 
 	void SetMessageCallback(const MessageCallback &inMessageCallback) override;
@@ -110,10 +116,10 @@ class MSshTerminalChannel : public MTerminalChannel
 	asio_ns::streambuf mResponse;
 };
 
-MSshTerminalChannel::MSshTerminalChannel(const std::shared_ptr<pinch::basic_connection> &inConnection)
-	: mChannel(new pinch::terminal_channel(inConnection))
+MSshTerminalChannel::MSshTerminalChannel(std::shared_ptr<pinch::basic_connection> inConnection)
+	: mChannel(new pinch::terminal_channel(std::move(inConnection)))
 {
-	inConnection->keep_alive();
+	mChannel->get_connection().keep_alive();
 }
 
 MSshTerminalChannel::~MSshTerminalChannel() = default;
@@ -150,8 +156,6 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 	const std::vector<std::string> &inArgv, const vector<string> &env,
 	const OpenCallback &inOpenCallback)
 {
-	// env is ignored anyway...
-
 	MAppExecutor my_executor{ &MSaltApp::Instance().get_context() };
 
 	auto cb = asio_ns::bind_executor(
@@ -163,11 +167,19 @@ void MSshTerminalChannel::Open(const string &inTerminalType,
 				connection.get_connection_parameters(pinch::direction::s2c),
 				connection.get_key_exchange_algorithm() });
 
-			mConnectionInfo.erase(unique(mConnectionInfo.begin(), mConnectionInfo.end()), mConnectionInfo.end());
+			mConnectionInfo.erase(std::ranges::unique(mConnectionInfo).begin(), mConnectionInfo.end());
 
 			if (this->mRefCount > 0)
 				inOpenCallback(ec);
 		});
+
+	mChannel->set_environment_variable("COLORTERM", "truecolor");
+
+	for (auto &e : env)
+	{
+		if (auto s = e.find('='); s != std::string::npos)
+			mChannel->set_environment_variable(e.substr(0, s), e.substr(s + 1));
+	}
 
 	mChannel->open_with_pty(mTerminalWidth, mTerminalHeight,
 		inTerminalType, inForwardAgent, inForwardX11, inArgv.empty() ? "" : inArgv.front(), std::move(cb));

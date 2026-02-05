@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -47,7 +47,7 @@ class MAuthDialog : public MDialog
 	MAuthDialog(const std::string &inTitle, const std::string &name, const std::string &inInstruction,
 		const std::vector<pinch::prompt> &prompts, MWindow *inParent, std::promise<std::vector<std::string>> inReply);
 
-	virtual ~MAuthDialog();
+	~MAuthDialog() override;
 
 	static void RequestSimplePassword(
 		const std::string &inDialogTitle,
@@ -57,7 +57,7 @@ class MAuthDialog : public MDialog
 
   protected:
 
-	virtual bool OKClicked();
+	bool OKClicked() override;
 
 	int32_t mFields = -1;
 	MWindow *mParent;

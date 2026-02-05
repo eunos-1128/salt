@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Maarten L. Hekkelman
+ * Copyright (c) 2023-2026 Maarten L. Hekkelman
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,13 +28,15 @@
 // All rights reserved
 
 #include "MTerminalBuffer.hpp"
-#include "MPreferences.hpp"
-#include "MUnicode.hpp"
+
+#include <MPreferences.hpp>
+#include <MUnicode.hpp>
 
 #include <algorithm>
 #include <ranges>
 #include <set>
 
+#include <utility>
 #include <zeep/uri.hpp>
 
 // --------------------------------------------------------------------
@@ -108,12 +110,6 @@ void swap(MLine &lhs, MLine &rhs) noexcept
 MTerminalBuffer::MTerminalBuffer(uint32_t inWidth, uint32_t inHeight, bool inBuffer)
 	: mLines(inHeight, MLine(inWidth))
 	, mWidth(inWidth)
-	, mDirty(false)
-	, mBeginLine(0)
-	, mBeginColumn(0)
-	, mEndLine(0)
-	, mEndColumn(0)
-	, mBlockSelection(false)
 {
 	mBufferSize = inBuffer ? MPrefs::GetInteger("buffer-size", 5000) : 0;
 }
@@ -164,7 +160,7 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 	{
 		// for ioAnchorLine, find out what unwrapped line it is on
 		int32_t anchor = 0, newAnchorLine = ioAnchorLine;
-		for (int32_t i = 0; i < ioAnchorLine + static_cast<int32_t>(mBuffer.size()) and i < static_cast<int32_t>(mBuffer.size()); ++i)
+		for (int32_t i = 0; i < ioAnchorLine + static_cast<int32_t>(mBuffer.size()) and std::cmp_less(i, mBuffer.size()); ++i)
 		{
 			if (not mBuffer[mBuffer.size() - i - 1].IsSoftWrapped())
 				++anchor;
@@ -239,7 +235,7 @@ void MTerminalBuffer::Resize(uint32_t inWidth, uint32_t inHeight, int32_t &ioAnc
 		swap(mBuffer, rewrapped);
 
 		// fill the mLines array from the new buffer
-		for (auto & mLine : std::views::reverse(mLines))
+		for (auto &mLine : std::views::reverse(mLines))
 		{
 			if (mBuffer.empty())
 				break;
@@ -545,9 +541,8 @@ void MTerminalBuffer::SetDirty(bool inDirty)
 
 void MTerminalBuffer::FillWithE()
 {
-	for (uint32_t l = 0; l < mLines.size(); ++l)
+	for (auto &line : mLines)
 	{
-		MLine &line(mLines[l]);
 		for (uint32_t column = 0; column < mWidth; ++column)
 			line[column] = MChar('E', 0, mForeColor, mBackColor);
 	}
@@ -739,7 +734,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 		++lineNr;
 
 		line.CopyOut(back_inserter(s));
-		if (not line.IsSoftWrapped() or lineNr >= static_cast<int32_t>(mLines.size()))
+		if (not line.IsSoftWrapped() or std::cmp_greater_equal(lineNr, mLines.size()))
 			break;
 	}
 
@@ -747,7 +742,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 	while (not s.empty() and s.back().GetUnicode() == ' ')
 		s.pop_back();
 
-	if (inColumn > static_cast<int32_t>(s.size()))
+	if (std::cmp_greater(inColumn, s.size()))
 		inColumn = static_cast<int32_t>(s.size());
 
 	const int8_t
@@ -776,7 +771,7 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 	{
 		++column;
 		nextColumn = column;
-		if (nextColumn >= static_cast<int32_t>(s.size()))
+		if (std::cmp_greater_equal(nextColumn, s.size()))
 			break;
 		TerminalWordBreakClass cl = GetTerminalWordBreakClass(s[column].GetUnicode());
 		state = kNextWordBreakStateTable[static_cast<uint8_t>(state)][cl];
@@ -802,13 +797,13 @@ void MTerminalBuffer::FindWord(int32_t inLine, int32_t inColumn,
 		outColumn2 = nextColumn;
 		outLine1 = outLine2 = inLine; // we now have to correct for the wrapping
 
-		while (outColumn1 > static_cast<int32_t>(mWidth))
+		while (std::cmp_greater(outColumn1, mWidth))
 		{
 			outColumn1 -= mWidth;
 			++outLine1;
 		}
 
-		while (outColumn2 > static_cast<int32_t>(mWidth))
+		while (std::cmp_greater(outColumn2, mWidth))
 		{
 			outColumn2 -= mWidth;
 			++outLine2;
@@ -900,10 +895,10 @@ unicode MTerminalBuffer::GetChar(uint32_t inOffset, bool inToLower) const
 	int32_t line = inOffset / mWidth;
 	int32_t column = inOffset % mWidth;
 
-	assert(line >= 0 and line < static_cast<int32_t>(mBuffer.size() + mLines.size()));
+	assert(line >= 0 and std::cmp_less(line, mBuffer.size() + mLines.size()));
 
 	unicode result;
-	if (line >= static_cast<int32_t>(mBuffer.size()))
+	if (std::cmp_greater_equal(line, mBuffer.size()))
 		result = mLines[line - mBuffer.size()][column].GetUnicode();
 	else
 		result = mBuffer[mBuffer.size() - line - 1][column].GetUnicode();
@@ -1072,7 +1067,7 @@ bool MTerminalBuffer::FindPrevious(int32_t &ioLine, int32_t &ioColumn, const std
 		ioColumn = (N - i - M + 1) % mWidth;
 		result = true;
 	}
-	else if (inWrapAround and (ioLine < lineCount or ioColumn < static_cast<int32_t>(mWidth)))
+	else if (inWrapAround and (ioLine < lineCount or std::cmp_less(ioColumn, mWidth)))
 	{
 		int32_t line = lineCount - mBuffer.size() - 1, column = mWidth - 1;
 		result = FindPrevious(line, column, inWhat, inIgnoreCase, false);
@@ -1212,7 +1207,7 @@ int MTerminalBuffer::GetHoveredLink(int32_t inLine, int32_t inColumn)
 	mHoverdLinkEndLine = 0;
 	mHoverdLinkEndColumn = 0;
 
-	if (static_cast<uint32_t>(inColumn) > mWidth)
+	if (std::cmp_greater(inColumn,  mWidth))
 		return 0;
 
 	if (inLine >= 0)

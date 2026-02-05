@@ -25,7 +25,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 # set the project name
-project(salt VERSION 4.1.0 LANGUAGES C CXX)
+project(salt VERSION 5.0.0 LANGUAGES C CXX)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -51,6 +51,7 @@ option(BUILD_DOCUMENTATION "Build manual page" OFF)
 include(CPM)
 include(CMakePackageConfigHelpers)
 include(FindPkgConfig)
+include(GNUInstallDirs)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-multichar")
@@ -70,27 +71,17 @@ include(VersionString)
 write_version_header(${PROJECT_SOURCE_DIR}/src/)
 
 # Optionally use mrc to create resources
-find_package(mrc QUIET)
-
-if(MRC_FOUND)
-    option(USE_RSRC "Use mrc to create resources" ON)
-else()
-    message(FATAL_ERROR "salt: Cannot continue since mrc was not found")
-endif()
+find_package(mrc REQUIRED)
+mrc_write_header(${CMAKE_CURRENT_SOURCE_DIR}/src/mrsrc.hpp)
 
 add_compile_options(-pthread)
 
 find_package(ZLIB REQUIRED)
 
 find_package(mcfp REQUIRED)
-#find_package(zeem REQUIRED)
 find_package(zeep REQUIRED)
 find_package(pinch REQUIRED)
 find_package(mgui REQUIRED)
-# find_package(gxrio REQUIRED)
-
-# add_subdirectory(libpinch EXCLUDE_FROM_ALL)
-# add_subdirectory(libmgui EXCLUDE_FROM_ALL)
 
 # Generate the manual first
 add_subdirectory(manual)
@@ -103,6 +94,8 @@ file(GLOB salt_src ${CMAKE_SOURCE_DIR}/src/*.cpp)
 add_executable(salt
     ${salt_src}
     ${mgui_src})
+
+add_dependencies(salt manual_page)
 
 set(RESOURCES
     ${CMAKE_SOURCE_DIR}/rsrc/Menus
