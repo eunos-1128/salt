@@ -307,7 +307,7 @@
 	</localstring>
   
 	<localstring context="prefs-dialog">
-		<key>Use Certficates for authentication</key>
+		<key>Use Certificates for authentication</key>
 		<value>Gebruik certificaten voor identificatie</value>
 	</localstring>
 	

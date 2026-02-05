@@ -67,7 +67,7 @@
 					</hbox>
 				</page>
 				<page id="page3">
-					<checkbox if="WINDOWS" bind="top left" id="use-certificate" title="Use Certficates for authentication" />
+					<checkbox if="WINDOWS" bind="top left" id="use-certificate" title="Use Certificates for authentication" />
 					<checkbox margin-left="10" bind="top left" id="forward-ssh-agent" title="Forward ssh-agent (may require a restart)" />
 					<checkbox if="WINDOWS" margin-left="10" margin-bottom="20" bind="top left" id="act-as-pageant" title="Provide SSH authentication to other programs (Pageant)" />
 					<!-- <checkbox margin-left="10" bind="top left" id="forward-gpg-agent" title="Forward gpg-agent" /> -->

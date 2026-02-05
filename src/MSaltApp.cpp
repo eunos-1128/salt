@@ -553,7 +553,7 @@ void Install(const std::string &inPrefix)
 		// --------------------------------------------------------------------
 		// Ask if this is ok
 
-		std::cout << "No prefix was specied, where do you want to install salt?\n";
+		std::cout << "No prefix was specified, where do you want to install salt?\n";
 
 		prefix = ask("prefix path", prefix);
 	}
