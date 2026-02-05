@@ -19,4 +19,4 @@ add_custom_command(
 	COMMENT "Generating manual pages with Sphinx")
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/salt.1
-	DESTINATION ${CMAKE_INSTALL_DATADIR}/man/man1)
+	DESTINATION share/man/man1)

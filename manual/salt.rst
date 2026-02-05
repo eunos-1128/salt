@@ -61,7 +61,7 @@ The emulation should be comparable to xterm offering the usual
 VTxxx emulation as well as more modern features like colors.
 
 The SSH implementation uses multiplexing for connections to hosts
-which allows to quickly open multiple sessions reusing the open
+which allows one to quickly open multiple sessions reusing the open
 connection. There's also support for transferring files as well
 as three ways of acting as a proxy.
 
@@ -76,7 +76,7 @@ in that case Control-Right-click will open the context menu.
 
 To switch between windows you can use Control-Tab and Control-Shift-Tab
 sequences. However, if you are using Wayland and have an older
-implemenation of a compositor than this will not work as expected
+implementation of a compositor than this will not work as expected
 since the required protocol (*xdg_activation_v1*) is not yet
 supported by many. The workaround it so start salt using an X11
 backend. (launch with GDK_BACKEND=x11 in the environment)
