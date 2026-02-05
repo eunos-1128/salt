@@ -18,8 +18,10 @@ sudo apt install salt
 Building
 --------
 
+Before building salt, you will have to build and install libmcfp, libzeem, libzeep, libpinch and libmgui.
+
 ```console
-git clone --recurse-submodules https://github.com/mhekkel/salt.git
+git clone https://forge.hekkelman.net/maarten/salt.git
 cd salt
 cmake -B build
 cmake --build build

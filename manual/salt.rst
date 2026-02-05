@@ -272,7 +272,7 @@ Bugs
 ----
 
 There undoubtely will be bugs in this application. Please report
-at https://github.com/mhekkel/salt/issues
+at https://forge.hekkelman.net/maarten/salt/issues
 
 
 .. toctree::
